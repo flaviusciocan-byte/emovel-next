@@ -9,12 +9,6 @@ export const metadata = createPageMetadata({
   path: "/docs",
 });
 
-const systemShifts = [
-  "From random output to structured execution.",
-  "From isolated tools to operating layers.",
-  "From visual experiments to monetizable digital assets.",
-];
-
 export default function Docs() {
   const language = detectLanguage();
   const translations = docsTranslations[language] || docsTranslations.en;

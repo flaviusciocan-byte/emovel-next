@@ -1,4 +1,5 @@
 import { createPageMetadata } from "../seo";
+import BuilderClient from "./builder-client";
 import { builderTranslations } from "@/translations/builder";
 import { detectLanguage } from "@/utils/language";
 
@@ -8,12 +9,6 @@ export const metadata = createPageMetadata({
     "Structure your product logic, define execution layers, and turn raw ideas into controlled digital systems.",
   path: "/builder",
 });
-
-const systemShifts = [
-  "From random output to structured execution.",
-  "From isolated tools to operating layers.",
-  "From visual experiments to monetizable digital assets.",
-];
 
 export default function Builder() {
   const language = detectLanguage();
@@ -48,25 +43,16 @@ export default function Builder() {
         </div>
       </section>
 
-      <section className="border-b border-white/[0.07] px-6 py-28">
-        <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[0.7fr_1fr]">
-          <h2 className="text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-            Custom Solutions
-          </h2>
-          <p className="max-w-2xl text-lg leading-8 text-slate-300">
-            Our builder allows you to create custom solutions that fit your specific requirements.
-          </p>
-        </div>
-      </section>
+      <BuilderClient />
 
-      <section id="start" className="px-6 py-28">
+      <section className="px-6 py-28">
         <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-10 border border-white/[0.1] bg-white/[0.025] p-8 sm:p-12 lg:flex-row lg:items-center">
           <div>
             <p className="text-sm font-medium uppercase tracking-[0.36em] text-slate-500">
               Final CTA
             </p>
             <h2 className="mt-4 max-w-3xl text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-              Let's Build Something Amazing.
+              Prepare a controlled digital product system.
             </h2>
           </div>
           <a

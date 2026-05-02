@@ -1,4 +1,5 @@
 import { createPageMetadata } from "../seo";
+import PromptEngineClient from "./prompt-engine-client";
 import { promptEngineTranslations } from "@/translations/prompt-engine";
 import { detectLanguage } from "@/utils/language";
 
@@ -8,12 +9,6 @@ export const metadata = createPageMetadata({
     "Define, optimize, and control the prompt logic that powers your EMOVEL system.",
   path: "/prompt-engine",
 });
-
-const systemShifts = [
-  "From random output to structured execution.",
-  "From isolated tools to operating layers.",
-  "From visual experiments to monetizable digital assets.",
-];
 
 export default function PromptEngine() {
   const language = detectLanguage();
@@ -48,25 +43,16 @@ export default function PromptEngine() {
         </div>
       </section>
 
-      <section className="border-b border-white/[0.07] px-6 py-28">
-        <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[0.7fr_1fr]">
-          <h2 className="text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-            Automate and Optimize
-          </h2>
-          <p className="max-w-2xl text-lg leading-8 text-slate-300">
-            Our prompt engine helps you streamline your prompts for maximum impact.
-          </p>
-        </div>
-      </section>
+      <PromptEngineClient />
 
-      <section id="start" className="px-6 py-28">
+      <section className="px-6 py-28">
         <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-10 border border-white/[0.1] bg-white/[0.025] p-8 sm:p-12 lg:flex-row lg:items-center">
           <div>
             <p className="text-sm font-medium uppercase tracking-[0.36em] text-slate-500">
               Final CTA
             </p>
             <h2 className="mt-4 max-w-3xl text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-              Let's Get Started Today.
+              Let&apos;s Get Started Today.
             </h2>
           </div>
           <a

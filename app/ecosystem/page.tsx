@@ -9,12 +9,6 @@ export const metadata = createPageMetadata({
   path: "/ecosystem",
 });
 
-const systemShifts = [
-  "From random output to structured execution.",
-  "From isolated tools to operating layers.",
-  "From visual experiments to monetizable digital assets.",
-];
-
 export default function Ecosystem() {
   const language = detectLanguage();
   const translations = ecosystemTranslations[language] || ecosystemTranslations.en;
