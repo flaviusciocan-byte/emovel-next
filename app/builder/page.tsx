@@ -16,7 +16,7 @@ export default function Builder() {
 
   return (
     <main className="min-h-screen bg-[#030405] text-slate-100">
-      <section className="relative flex min-h-screen items-center overflow-hidden border-b border-white/[0.07] px-6 py-24 sm:py-32 lg:px-10">
+      <section className="relative flex min-h-screen items-center overflow-hidden border-b border-white/[0.07] px-6 pt-24 pb-24 sm:pt-28 sm:pb-32 lg:px-10">
         <div className="absolute inset-0 bg-black/55" />
         <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/60 to-transparent" />
 
@@ -35,7 +35,7 @@ export default function Builder() {
           </div>
 
           <a
-            href="#start"
+            href="/builder"
             className="inline-flex h-14 items-center justify-center rounded-full border border-white/15 px-8 text-sm font-semibold uppercase tracking-[0.22em] text-white hover:border-white/40 hover:bg-white hover:text-black"
           >
             {translations.cta}

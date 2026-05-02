@@ -44,23 +44,31 @@ function slugify(value: string) {
   );
 }
 
-function renderBlock(block: BuilderBlock, accentColor: string) {
+function renderBlock(block: BuilderBlock, accentColor: string, theme: PageConfig["theme"]) {
+  const isLight = theme === "light";
+  const headingClass = isLight ? "text-slate-950" : "text-white";
+  const bodyClass = isLight ? "text-slate-700" : "text-slate-300";
+  const mutedClass = isLight ? "text-slate-600" : "text-slate-400";
+  const cardClass = isLight
+    ? "border-slate-200 bg-white shadow-sm"
+    : "border-white/10 bg-white/[0.03]";
+
   if (block.type === "hero") {
     return (
       <section className="px-8 py-20 text-center">
-        <h1 className="mx-auto max-w-3xl text-4xl font-semibold tracking-tight text-white">
+        <h1 className={`mx-auto max-w-3xl text-4xl font-semibold tracking-tight ${headingClass}`}>
           {getString(block.data, "headline")}
         </h1>
-        <p className="mx-auto mt-5 max-w-2xl text-sm leading-7 text-slate-300">
+        <p className={`mx-auto mt-5 max-w-2xl text-sm leading-7 ${bodyClass}`}>
           {getString(block.data, "subheadline")}
         </p>
-        <button
-          type="button"
+        <span
+          aria-label="Preview CTA"
           className="mt-8 rounded-full px-6 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-black"
           style={{ backgroundColor: accentColor }}
         >
           {getString(block.data, "cta")}
-        </button>
+        </span>
       </section>
     );
   }
@@ -68,17 +76,17 @@ function renderBlock(block: BuilderBlock, accentColor: string) {
   if (block.type === "features") {
     return (
       <section className="px-8 py-14">
-        <h2 className="text-center text-3xl font-semibold text-white">
+        <h2 className={`text-center text-3xl font-semibold ${headingClass}`}>
           {getString(block.data, "headline")}
         </h2>
         <div className="mt-8 grid gap-4 md:grid-cols-3">
           {getStringArray(block.data, "items").map((item) => (
-            <div key={item} className="border border-white/10 bg-white/[0.03] p-5">
+            <div key={item} className={`border p-5 ${cardClass}`}>
               <div
                 className="mb-4 h-2 w-2 rounded-full"
                 style={{ backgroundColor: accentColor }}
               />
-              <p className="text-sm leading-6 text-slate-200">{item}</p>
+              <p className={`text-sm leading-6 ${bodyClass}`}>{item}</p>
             </div>
           ))}
         </div>
@@ -88,10 +96,10 @@ function renderBlock(block: BuilderBlock, accentColor: string) {
 
   if (block.type === "proof") {
     return (
-      <section className="border-y border-white/10 px-8 py-12">
+      <section className={`border-y px-8 py-12 ${isLight ? "border-slate-200" : "border-white/10"}`}>
         <div className="grid gap-5 text-center md:grid-cols-3">
           {getStringArray(block.data, "stats").map((stat) => (
-            <p key={stat} className="text-sm uppercase tracking-[0.18em] text-slate-300">
+            <p key={stat} className={`text-sm uppercase tracking-[0.18em] ${bodyClass}`}>
               {stat}
             </p>
           ))}
@@ -103,7 +111,7 @@ function renderBlock(block: BuilderBlock, accentColor: string) {
   if (block.type === "pricing") {
     return (
       <section className="px-8 py-14">
-        <h2 className="text-center text-3xl font-semibold text-white">
+        <h2 className={`text-center text-3xl font-semibold ${headingClass}`}>
           {getString(block.data, "headline")}
         </h2>
         <div className="mt-8 grid gap-4 md:grid-cols-3">
@@ -111,11 +119,15 @@ function renderBlock(block: BuilderBlock, accentColor: string) {
             <div
               key={tier}
               className={`border p-5 ${
-                index === 1 ? "border-white/25 bg-white/[0.06]" : "border-white/10 bg-white/[0.03]"
+                index === 1
+                  ? isLight
+                    ? "border-slate-400 bg-slate-100"
+                    : "border-white/25 bg-white/[0.06]"
+                  : cardClass
               }`}
             >
-              <p className="text-lg font-semibold text-white">{tier}</p>
-              <p className="mt-3 text-sm leading-6 text-slate-400">
+              <p className={`text-lg font-semibold ${headingClass}`}>{tier}</p>
+              <p className={`mt-3 text-sm leading-6 ${mutedClass}`}>
                 Structured offer layer for controlled product execution.
               </p>
             </div>
@@ -128,13 +140,13 @@ function renderBlock(block: BuilderBlock, accentColor: string) {
   if (block.type === "faq") {
     return (
       <section className="px-8 py-14">
-        <h2 className="text-center text-3xl font-semibold text-white">
+        <h2 className={`text-center text-3xl font-semibold ${headingClass}`}>
           {getString(block.data, "headline")}
         </h2>
         <div className="mx-auto mt-8 max-w-2xl space-y-3">
           {getStringArray(block.data, "items").map((item) => (
-            <div key={item} className="border border-white/10 bg-white/[0.03] p-4">
-              <p className="text-sm text-slate-200">{item}</p>
+            <div key={item} className={`border p-4 ${cardClass}`}>
+              <p className={`text-sm ${bodyClass}`}>{item}</p>
             </div>
           ))}
         </div>
@@ -145,25 +157,25 @@ function renderBlock(block: BuilderBlock, accentColor: string) {
   if (block.type === "cta") {
     return (
       <section className="px-8 py-16 text-center">
-        <h2 className="mx-auto max-w-2xl text-3xl font-semibold text-white">
+        <h2 className={`mx-auto max-w-2xl text-3xl font-semibold ${headingClass}`}>
           {getString(block.data, "headline")}
         </h2>
-        <button
-          type="button"
+        <span
+          aria-label="Preview CTA"
           className="mt-8 rounded-full px-6 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-black"
           style={{ backgroundColor: accentColor }}
         >
           {getString(block.data, "buttonText")}
-        </button>
+        </span>
       </section>
     );
   }
 
   if (block.type === "footer") {
     return (
-      <section className="border-t border-white/10 px-8 py-10 text-center">
-        <p className="text-lg font-semibold text-white">{getString(block.data, "brand")}</p>
-        <p className="mt-2 text-xs uppercase tracking-[0.18em] text-slate-500">
+      <section className={`border-t px-8 py-10 text-center ${isLight ? "border-slate-200" : "border-white/10"}`}>
+        <p className={`text-lg font-semibold ${headingClass}`}>{getString(block.data, "brand")}</p>
+        <p className={`mt-2 text-xs uppercase tracking-[0.18em] ${mutedClass}`}>
           {getString(block.data, "tagline")}
         </p>
       </section>
@@ -172,7 +184,7 @@ function renderBlock(block: BuilderBlock, accentColor: string) {
 
   return (
     <section className="px-8 py-12">
-      <p className="mx-auto max-w-2xl text-sm leading-7 text-slate-300">
+      <p className={`mx-auto max-w-2xl text-sm leading-7 ${bodyClass}`}>
         {getString(block.data, "content")}
       </p>
     </section>
@@ -269,7 +281,7 @@ export default function BuilderClient() {
   }
 
   return (
-    <section id="start" className="border-b border-white/[0.07] px-6 py-24 sm:py-28">
+    <section className="border-b border-white/[0.07] px-6 py-24 sm:py-28">
       <div className="mx-auto max-w-7xl">
         <div className="mb-10 max-w-3xl">
           <p className="text-sm font-medium uppercase tracking-[0.36em] text-slate-500">
@@ -484,7 +496,7 @@ export default function BuilderClient() {
                     selectedBlockId === block.id ? "ring-1 ring-white/30" : "hover:ring-1 hover:ring-white/10"
                   }`}
                 >
-                  {renderBlock(block, config.accentColor)}
+                  {renderBlock(block, config.accentColor, config.theme)}
                 </div>
               ))}
             </div>
