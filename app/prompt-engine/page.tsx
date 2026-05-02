@@ -1,4 +1,5 @@
 import { createPageMetadata } from "../seo";
+import PromptEngineClient from "./prompt-engine-client";
 
 export const metadata = createPageMetadata({
   title: "EMOVEL Prompt Engine — System Logic Engine",
@@ -37,18 +38,9 @@ export default function PromptEngine() {
         </div>
       </section>
 
-      <section className="border-b border-white/[0.07] px-6 py-28">
-        <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[0.7fr_1fr]">
-          <h2 className="text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-            Automate and Optimize
-          </h2>
-          <p className="max-w-2xl text-lg leading-8 text-slate-300">
-            Our prompt engine helps you streamline your prompts for maximum impact.
-          </p>
-        </div>
-      </section>
+      <PromptEngineClient />
 
-      <section id="start" className="px-6 py-28">
+      <section className="px-6 py-28">
         <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-10 border border-white/[0.1] bg-white/[0.025] p-8 sm:p-12 lg:flex-row lg:items-center">
           <div>
             <p className="text-sm font-medium uppercase tracking-[0.36em] text-slate-500">
