@@ -29,7 +29,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <header className="bg-[#030405] text-slate-100 py-4 px-6">
+        <header className="bg-[#030405] text-slate-100 py-4 px-6 backdrop-blur-lg z-50 fixed w-full">
           <nav className="flex items-center justify-between max-w-6xl mx-auto">
             <Link href="/" className="text-2xl font-semibold tracking-tight text-white">
               EMOVEL
@@ -40,10 +40,13 @@ export default function RootLayout({
               <li><Link href="/builder">Builder</Link></li>
               <li><Link href="/assistants">Assistants</Link></li>
               <li><Link href="/prompt-engine">Prompt Engine</Link></li>
+              <li><Link href="/docs" className="text-slate-400 hover:text-white">Docs</Link></li>
             </ul>
           </nav>
         </header>
-        {children}
+        <main className="mt-[8rem] flex flex-col">
+          {children}
+        </main>
       </body>
     </html>
   );
