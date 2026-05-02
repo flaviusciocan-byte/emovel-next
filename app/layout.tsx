@@ -35,11 +35,11 @@ export default function RootLayout({
               EMOVEL
             </Link>
             <ul className="flex space-x-8">
-              <li><Link href="/">Home</Link></li>
-              <li><Link href="/ecosystem">Ecosystem</Link></li>
-              <li><Link href="/builder">Builder</Link></li>
-              <li><Link href="/assistants">Assistants</Link></li>
-              <li><Link href="/prompt-engine">Prompt Engine</Link></li>
+              <li><Link href="/" className="text-slate-400 hover:text-white">Home</Link></li>
+              <li><Link href="/ecosystem" className="text-slate-400 hover:text-white">Ecosystem</Link></li>
+              <li><Link href="/builder" className="text-slate-400 hover:text-white">Builder</Link></li>
+              <li><Link href="/assistants" className="text-slate-400 hover:text-white">Assistants</Link></li>
+              <li><Link href="/prompt-engine" className="text-slate-400 hover:text-white">Prompt Engine</Link></li>
               <li><Link href="/docs" className="text-slate-400 hover:text-white">Docs</Link></li>
             </ul>
           </nav>
