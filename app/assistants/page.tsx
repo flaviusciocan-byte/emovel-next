@@ -1,4 +1,5 @@
 import { createPageMetadata } from "../seo";
+import AssistantsClient from "./assistants-client";
 import { assistantsTranslations } from "@/translations/assistants";
 import { detectLanguage } from "@/utils/language";
 
@@ -8,12 +9,6 @@ export const metadata = createPageMetadata({
     "Deploy specialized assistants that transform structured systems into real, usable outputs for digital product creation.",
   path: "/assistants",
 });
-
-const systemShifts = [
-  "From random output to structured execution.",
-  "From isolated tools to operating layers.",
-  "From visual experiments to monetizable digital assets.",
-];
 
 export default function Assistants() {
   const language = detectLanguage();
@@ -48,16 +43,7 @@ export default function Assistants() {
         </div>
       </section>
 
-      <section className="border-b border-white/[0.07] px-6 py-28">
-        <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[0.7fr_1fr]">
-          <h2 className="text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-            Expert Support
-          </h2>
-          <p className="max-w-2xl text-lg leading-8 text-slate-300">
-            Our team of experts is here to help you every step of the way.
-          </p>
-        </div>
-      </section>
+      <AssistantsClient />
 
       <section id="start" className="px-6 py-28">
         <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-10 border border-white/[0.1] bg-white/[0.025] p-8 sm:p-12 lg:flex-row lg:items-center">
@@ -66,7 +52,7 @@ export default function Assistants() {
               Final CTA
             </p>
             <h2 className="mt-4 max-w-3xl text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-              Let's Get Started Today.
+              Let&apos;s Get Started Today.
             </h2>
           </div>
           <a
