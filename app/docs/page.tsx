@@ -67,7 +67,7 @@ export default function Docs() {
         <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[0.7fr_1fr]">
           <h2 className="text-4xl font-semibold tracking-tight text-white sm:text-5xl">
             Deployment Structure
-          </2>
+          </h2>
           <p className="max-w-2xl text-lg leading-8 text-slate-300">
             Outline the deployment structure for your AI systems to ensure scalability and maintainability.
           </p>
