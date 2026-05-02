@@ -1,5 +1,6 @@
 import { createPageMetadata } from "../seo";
 import { docsTranslations } from "@/translations/docs";
+import { detectLanguage } from "@/utils/language";
 
 export const metadata = createPageMetadata({
   title: "EMOVEL Docs — Operating System Documentation",

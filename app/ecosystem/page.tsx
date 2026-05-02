@@ -1,5 +1,6 @@
 import { createPageMetadata } from "../seo";
 import { ecosystemTranslations } from "@/translations/ecosystem";
+import { detectLanguage } from "@/utils/language";
 
 export const metadata = createPageMetadata({
   title: "EMOVEL Ecosystem — Architecture for Digital Execution",

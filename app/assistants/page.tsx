@@ -1,5 +1,6 @@
 import { createPageMetadata } from "../seo";
 import { assistantsTranslations } from "@/translations/assistants";
+import { detectLanguage } from "@/utils/language";
 
 export const metadata = createPageMetadata({
   title: "EMOVEL Assistants — Execution Layer",

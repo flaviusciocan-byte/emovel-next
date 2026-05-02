@@ -1,5 +1,6 @@
 import { createPageMetadata } from "../seo";
 import { builderTranslations } from "@/translations/builder";
+import { detectLanguage } from "@/utils/language";
 
 export const metadata = createPageMetadata({
   title: "EMOVEL Builder — Design Your System",

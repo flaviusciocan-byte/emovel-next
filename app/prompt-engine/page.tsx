@@ -1,5 +1,6 @@
 import { createPageMetadata } from "../seo";
 import { promptEngineTranslations } from "@/translations/prompt-engine";
+import { detectLanguage } from "@/utils/language";
 
 export const metadata = createPageMetadata({
   title: "EMOVEL Prompt Engine — System Logic Engine",
