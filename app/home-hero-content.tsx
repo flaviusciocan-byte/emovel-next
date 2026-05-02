@@ -50,7 +50,7 @@ export default function HomeHeroContent() {
       </div>
 
       <a
-        href="#start"
+        href="/builder"
         className="inline-flex h-14 items-center justify-center rounded-full border border-white/15 px-8 text-sm font-semibold uppercase tracking-[0.22em] text-white hover:border-white/40 hover:bg-white hover:text-black"
       >
         {copy.cta}

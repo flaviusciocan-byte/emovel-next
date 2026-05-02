@@ -138,7 +138,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="start" className="px-6 py-24 sm:py-28">
+      <section className="px-6 py-24 sm:py-28">
         <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-10 border border-white/[0.1] bg-white/[0.025] p-8 sm:p-12 lg:flex-row lg:items-center">
           <div>
             <p className="text-sm font-medium uppercase tracking-[0.36em] text-slate-500">
@@ -149,7 +149,7 @@ export default function Home() {
             </h2>
           </div>
           <a
-            href="mailto:hello@emovel.com"
+            href="/builder"
             className="inline-flex h-14 shrink-0 items-center justify-center rounded-full bg-white px-8 text-sm font-semibold uppercase tracking-[0.22em] text-black hover:bg-slate-200"
           >
             Enter The System
