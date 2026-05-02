@@ -1,4 +1,11 @@
-import Image from "next/image";
+import { createPageMetadata } from "../seo";
+
+export const metadata = createPageMetadata({
+  title: "EMOVEL Ecosystem — Architecture for Digital Execution",
+  description:
+    "Explore the EMOVEL ecosystem: product architecture, prompt systems, assistants, documentation, and commercial execution layers.",
+  path: "/ecosystem",
+});
 
 export default function Ecosystem() {
   return (

@@ -1,4 +1,11 @@
-import Image from "next/image";
+import { createPageMetadata } from "../seo";
+
+export const metadata = createPageMetadata({
+  title: "EMOVEL Docs — Operating System Documentation",
+  description:
+    "Standards, workflows, and principles for controlled AI systems, prompt architecture, and digital product execution.",
+  path: "/docs",
+});
 
 export default function Docs() {
   return (

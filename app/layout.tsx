@@ -2,6 +2,15 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import {
+  defaultDescription,
+  defaultTitle,
+  ogImage,
+  siteName,
+  siteUrl,
+  softwareJsonLd,
+  websiteJsonLd,
+} from "./seo";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,8 +23,39 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "EMOVEL",
-  description: "EMOVEL - Build Systems That Convert",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: defaultTitle,
+    template: "%s",
+  },
+  description: defaultDescription,
+  applicationName: siteName,
+  alternates: {
+    canonical: siteUrl,
+  },
+  openGraph: {
+    title: defaultTitle,
+    description: defaultDescription,
+    url: siteUrl,
+    siteName,
+    type: "website",
+    images: [
+      {
+        url: ogImage,
+        alt: "EMOVEL controlled digital product system",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: defaultTitle,
+    description: defaultDescription,
+    images: [ogImage],
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({
@@ -29,6 +69,12 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify([websiteJsonLd, softwareJsonLd]),
+          }}
+        />
         <header className="bg-[#030405] text-slate-100 py-4 px-6 backdrop-blur-lg z-50 fixed w-full">
           <nav className="flex items-center justify-between max-w-6xl mx-auto">
             <Link href="/" className="text-2xl font-semibold tracking-tight text-white">

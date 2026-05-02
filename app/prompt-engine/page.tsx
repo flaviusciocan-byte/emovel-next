@@ -1,4 +1,11 @@
-import Image from "next/image";
+import { createPageMetadata } from "../seo";
+
+export const metadata = createPageMetadata({
+  title: "EMOVEL Prompt Engine — System Logic Engine",
+  description:
+    "Define, optimize, and control the prompt logic that powers your EMOVEL system.",
+  path: "/prompt-engine",
+});
 
 export default function PromptEngine() {
   return (
@@ -48,7 +55,7 @@ export default function PromptEngine() {
               Final CTA
             </p>
             <h2 className="mt-4 max-w-3xl text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-              Let's Get Started Today.
+              Let&apos;s Get Started Today.
             </h2>
           </div>
           <a

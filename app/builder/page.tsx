@@ -1,4 +1,11 @@
-import Image from "next/image";
+import { createPageMetadata } from "../seo";
+
+export const metadata = createPageMetadata({
+  title: "EMOVEL Builder — Design Your System",
+  description:
+    "Structure your product logic, define execution layers, and turn raw ideas into controlled digital systems.",
+  path: "/builder",
+});
 
 export default function Builder() {
   return (
@@ -48,7 +55,7 @@ export default function Builder() {
               Final CTA
             </p>
             <h2 className="mt-4 max-w-3xl text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-              Let's Build Something Amazing.
+              Let&apos;s Build Something Amazing.
             </h2>
           </div>
           <a

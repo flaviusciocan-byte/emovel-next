@@ -1,4 +1,11 @@
-import Image from "next/image";
+import { createPageMetadata } from "../seo";
+
+export const metadata = createPageMetadata({
+  title: "EMOVEL Assistants — Execution Layer",
+  description:
+    "Deploy specialized assistants that transform structured systems into real, usable outputs for digital product creation.",
+  path: "/assistants",
+});
 
 export default function Assistants() {
   return (
@@ -48,7 +55,7 @@ export default function Assistants() {
               Final CTA
             </p>
             <h2 className="mt-4 max-w-3xl text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-              Let's Get Started Today.
+              Let&apos;s Get Started Today.
             </h2>
           </div>
           <a
