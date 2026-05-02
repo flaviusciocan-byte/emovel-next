@@ -1,4 +1,5 @@
 import { createPageMetadata } from "../seo";
+import { builderTranslations } from "@/translations/builder";
 
 export const metadata = createPageMetadata({
   title: "EMOVEL Builder — Design Your System",
@@ -7,7 +8,16 @@ export const metadata = createPageMetadata({
   path: "/builder",
 });
 
+const systemShifts = [
+  "From random output to structured execution.",
+  "From isolated tools to operating layers.",
+  "From visual experiments to monetizable digital assets.",
+];
+
 export default function Builder() {
+  const language = detectLanguage();
+  const translations = builderTranslations[language] || builderTranslations.en;
+
   return (
     <main className="min-h-screen bg-[#030405] text-slate-100">
       <section className="relative flex min-h-screen items-center overflow-hidden border-b border-white/[0.07] px-6 py-24 sm:py-32 lg:px-10">
@@ -16,15 +26,15 @@ export default function Builder() {
 
         <div className="relative z-10 mx-auto mt-16 flex w-full max-w-6xl -translate-x-0 flex-col items-start gap-16 lg:-translate-x-8">
           <p className="text-sm font-medium uppercase tracking-[0.48em] text-slate-500">
-            Builder
+            {translations.eyebrow}
           </p>
 
           <div className="max-w-[760px]">
             <h1 className="text-5xl font-semibold leading-[0.94] tracking-tight text-white sm:text-6xl lg:text-7xl">
-              Build Your Dream System
+              {translations.headline}
             </h1>
             <p className="mt-8 text-lg font-medium uppercase tracking-[0.32em] text-slate-400">
-              Create custom solutions tailored to your unique needs.
+              {translations.subheadline}
             </p>
           </div>
 
@@ -32,7 +42,7 @@ export default function Builder() {
             href="#start"
             className="inline-flex h-14 items-center justify-center rounded-full border border-white/15 px-8 text-sm font-semibold uppercase tracking-[0.22em] text-white hover:border-white/40 hover:bg-white hover:text-black"
           >
-            Get Started
+            {translations.cta}
           </a>
         </div>
       </section>
@@ -55,7 +65,7 @@ export default function Builder() {
               Final CTA
             </p>
             <h2 className="mt-4 max-w-3xl text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-              Let&apos;s Build Something Amazing.
+              Let's Build Something Amazing.
             </h2>
           </div>
           <a

@@ -1,5 +1,5 @@
 import { createPageMetadata } from "../seo";
-import PromptEngineClient from "./prompt-engine-client";
+import { promptEngineTranslations } from "@/translations/prompt-engine";
 
 export const metadata = createPageMetadata({
   title: "EMOVEL Prompt Engine — System Logic Engine",
@@ -8,7 +8,16 @@ export const metadata = createPageMetadata({
   path: "/prompt-engine",
 });
 
+const systemShifts = [
+  "From random output to structured execution.",
+  "From isolated tools to operating layers.",
+  "From visual experiments to monetizable digital assets.",
+];
+
 export default function PromptEngine() {
+  const language = detectLanguage();
+  const translations = promptEngineTranslations[language] || promptEngineTranslations.en;
+
   return (
     <main className="min-h-screen bg-[#030405] text-slate-100">
       <section className="relative flex min-h-screen items-center overflow-hidden border-b border-white/[0.07] px-6 py-24 sm:py-32 lg:px-10">
@@ -17,15 +26,15 @@ export default function PromptEngine() {
 
         <div className="relative z-10 mx-auto mt-16 flex w-full max-w-6xl -translate-x-0 flex-col items-start gap-16 lg:-translate-x-8">
           <p className="text-sm font-medium uppercase tracking-[0.48em] text-slate-500">
-            Prompt Engine
+            {translations.eyebrow}
           </p>
 
           <div className="max-w-[760px]">
             <h1 className="text-5xl font-semibold leading-[0.94] tracking-tight text-white sm:text-6xl lg:text-7xl">
-              Streamline Your Prompts
+              {translations.headline}
             </h1>
             <p className="mt-8 text-lg font-medium uppercase tracking-[0.32em] text-slate-400">
-              Automate and optimize your prompts for maximum impact.
+              {translations.subheadline}
             </p>
           </div>
 
@@ -33,21 +42,30 @@ export default function PromptEngine() {
             href="#start"
             className="inline-flex h-14 items-center justify-center rounded-full border border-white/15 px-8 text-sm font-semibold uppercase tracking-[0.22em] text-white hover:border-white/40 hover:bg-white hover:text-black"
           >
-            Get Started
+            {translations.cta}
           </a>
         </div>
       </section>
 
-      <PromptEngineClient />
+      <section className="border-b border-white/[0.07] px-6 py-28">
+        <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[0.7fr_1fr]">
+          <h2 className="text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+            Automate and Optimize
+          </h2>
+          <p className="max-w-2xl text-lg leading-8 text-slate-300">
+            Our prompt engine helps you streamline your prompts for maximum impact.
+          </p>
+        </div>
+      </section>
 
-      <section className="px-6 py-28">
+      <section id="start" className="px-6 py-28">
         <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-10 border border-white/[0.1] bg-white/[0.025] p-8 sm:p-12 lg:flex-row lg:items-center">
           <div>
             <p className="text-sm font-medium uppercase tracking-[0.36em] text-slate-500">
               Final CTA
             </p>
             <h2 className="mt-4 max-w-3xl text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-              Let&apos;s Get Started Today.
+              Let's Get Started Today.
             </h2>
           </div>
           <a
