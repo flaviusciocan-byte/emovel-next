@@ -33,7 +33,7 @@ export default function Home() {
         <div className="absolute inset-0 bg-black/55" />
         <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/60 to-transparent" />
 
-        <div className="relative z-10 mx-auto mt-16 flex w-full max-w-6xl -translate-x-0 flex-col items-start gap-16 lg:-translate-x-8">
+        <div className="relative z-10 mx-auto mt-8 flex w-full max-w-6xl -translate-x-0 flex-col items-start gap-16 lg:-translate-x-8">
           <p className="text-sm font-medium uppercase tracking-[0.48em] text-slate-500">
             EMOVEL
           </p>
