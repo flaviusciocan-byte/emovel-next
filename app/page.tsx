@@ -1,7 +1,13 @@
 import Image from "next/image";
-import { useEffect, useState } from "react";
-import { detectLanguage } from "@/utils/language";
-import { homeTranslations } from "@/translations/home";
+import HomeHeroContent from "./home-hero-content";
+import { createPageMetadata } from "./seo";
+
+export const metadata = createPageMetadata({
+  title: "EMOVEL — Build Systems That Convert",
+  description:
+    "Turn ideas into structured, monetizable digital products through controlled systems, prompt logic, assistants, and execution architecture.",
+  path: "/",
+});
 
 const productCards = [
   {
@@ -28,12 +34,6 @@ const systemShifts = [
 ];
 
 export default function Home() {
-  const [language, setLanguage] = useState(detectLanguage());
-
-  useEffect(() => {
-    localStorage.setItem('language', language);
-  }, [language]);
-
   return (
     <main className="min-h-screen bg-[#030405] text-slate-100">
       <section className="relative flex min-h-screen items-center overflow-hidden border-b border-white/[0.07] px-6 pt-10 pb-24 sm:pt-14 sm:pb-28 lg:px-10">
@@ -49,26 +49,7 @@ export default function Home() {
         <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/60 to-transparent" />
 
         <div className="relative z-10 mx-auto flex w-full max-w-6xl -translate-x-0 flex-col items-start gap-12 lg:-translate-x-8">
-          <p className="text-sm font-medium uppercase tracking-[0.48em] text-slate-500">
-            {homeTranslations[language].eyebrow}
-          </p>
-
-          <div className="max-w-[760px]">
-            <h1 className="text-5xl font-semibold leading-[0.94] tracking-tight text-white sm:text-6xl lg:text-7xl">
-              {homeTranslations[language].headline}
-            </h1>
-            <p className="mt-8 max-w-2xl text-xl leading-8 text-slate-300 sm:text-2xl sm:leading-9">
-              Turn ideas into structured, monetizable digital products — not
-              tools, but controlled systems.
-            </p>
-          </div>
-
-          <a
-            href="#start"
-            className="inline-flex h-14 items-center justify-center rounded-full border border-white/15 px-8 text-sm font-semibold uppercase tracking-[0.22em] text-white hover:border-white/40 hover:bg-white hover:text-black"
-          >
-            {homeTranslations[language].cta}
-          </a>
+          <HomeHeroContent />
         </div>
       </section>
 
