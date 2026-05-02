@@ -1,561 +1,499 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { createDefaultBlock, createInitialPageConfig } from "./block-factory";
+import type { CSSProperties } from "react";
+import { buildOutputPlan } from "./output-planner";
+import { resolveStyle } from "./style-resolver";
+import { validateSpec } from "./spec-validator";
 import type {
-  BlockType,
-  BuilderBlock,
-  DomainConfig,
-  LocalExportRecord,
-  MobileConfig,
-  PageConfig,
+  BuilderSection,
+  BuilderSpec,
+  DesignDensity,
+  ExportManifest,
+  SectionType,
+  StylePreset,
 } from "./types";
 
-const blockTypes: { type: BlockType; label: string }[] = [
-  { type: "hero", label: "Hero" },
-  { type: "features", label: "Features" },
-  { type: "proof", label: "Proof" },
-  { type: "pricing", label: "Pricing" },
-  { type: "faq", label: "FAQ" },
-  { type: "text", label: "Text" },
-  { type: "cta", label: "CTA" },
-  { type: "footer", label: "Footer" },
-];
+const sectionTypes: SectionType[] = ["hero", "mechanism", "proof", "features", "cta", "faq"];
+const stylePresets: StylePreset[] = ["premium-dark", "light-clean", "editorial-warm"];
+const densityOptions: DesignDensity[] = ["focused", "premium", "dense"];
 
-type Panel = "blocks" | "theme" | "domain" | "mobile" | "export";
+const initialSpec: BuilderSpec = {
+  templateName: "b2b-consultant-landing",
+  pageType: "landing_page",
+  positioning: "Premium landing page for a B2B consultant with a controlled acquisition system.",
+  targetAudience: "Founders and operators who need strategic clarity before scaling execution.",
+  offer: "Strategic review, product architecture, and conversion system design.",
+  stylePreset: "premium-dark",
+  designDensity: "premium",
+  sections: [
+    {
+      id: "hero",
+      type: "hero",
+      title: "Turn scattered execution into a controlled system.",
+      objective: "Establish the promise, audience, and commercial outcome in the first viewport.",
+    },
+    {
+      id: "mechanism",
+      type: "mechanism",
+      title: "Define the operating mechanism.",
+      objective: "Explain how the offer converts raw ideas into structured assets and decisions.",
+    },
+    {
+      id: "proof",
+      type: "proof",
+      title: "Show why the system is credible.",
+      objective: "Connect positioning, process, and delivery logic into proof the buyer can evaluate.",
+    },
+    {
+      id: "cta",
+      type: "cta",
+      title: "Move qualified buyers into the system.",
+      objective: "Create a direct conversion point without fake publishing or route navigation.",
+    },
+  ],
+};
 
-function getString(data: Record<string, unknown>, key: string) {
-  return typeof data[key] === "string" ? data[key] : "";
+function textFieldClass() {
+  return "w-full border border-white/10 bg-black/35 px-4 py-3 text-sm text-white outline-none transition focus:border-white/35";
 }
 
-function getStringArray(data: Record<string, unknown>, key: string) {
-  return Array.isArray(data[key])
-    ? (data[key] as unknown[]).filter((item): item is string => typeof item === "string")
-    : [];
+function selectFieldClass() {
+  return "w-full border border-white/10 bg-black/35 px-4 py-3 text-sm text-white outline-none transition focus:border-white/35";
 }
 
-function slugify(value: string) {
+function labelClass() {
+  return "text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-white/45";
+}
+
+function formatLabel(value: string) {
+  return value
+    .split(/[_-]/g)
+    .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
+    .join(" ");
+}
+
+function createSection(): BuilderSection {
+  return {
+    id: `section-${Date.now().toString(36)}`,
+    type: "features",
+    title: "New system layer",
+    objective: "Define the role this section plays in the conversion path.",
+  };
+}
+
+function createManifest(spec: BuilderSpec): ExportManifest {
+  const validation = validateSpec(spec);
+  const outputPlan = buildOutputPlan(spec);
+  const style = resolveStyle(spec);
+
+  return {
+    generatedAt: new Date().toISOString(),
+    spec,
+    validation,
+    outputPlan,
+    style,
+  };
+}
+
+function PreviewSection({
+  section,
+  style,
+}: {
+  section: BuilderSection;
+  style: ReturnType<typeof resolveStyle>;
+}) {
   return (
-    value
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "") || "emovel-build"
-  );
-}
-
-function renderBlock(block: BuilderBlock, accentColor: string, theme: PageConfig["theme"]) {
-  const isLight = theme === "light";
-  const headingClass = isLight ? "text-slate-950" : "text-white";
-  const bodyClass = isLight ? "text-slate-700" : "text-slate-300";
-  const mutedClass = isLight ? "text-slate-600" : "text-slate-400";
-  const cardClass = isLight
-    ? "border-slate-200 bg-white shadow-sm"
-    : "border-white/10 bg-white/[0.03]";
-
-  if (block.type === "hero") {
-    return (
-      <section className="px-8 py-20 text-center">
-        <h1 className={`mx-auto max-w-3xl text-4xl font-semibold tracking-tight ${headingClass}`}>
-          {getString(block.data, "headline")}
-        </h1>
-        <p className={`mx-auto mt-5 max-w-2xl text-sm leading-7 ${bodyClass}`}>
-          {getString(block.data, "subheadline")}
-        </p>
-        <span
-          aria-label="Preview CTA"
-          className="mt-8 rounded-full px-6 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-black"
-          style={{ backgroundColor: accentColor }}
-        >
-          {getString(block.data, "cta")}
-        </span>
-      </section>
-    );
-  }
-
-  if (block.type === "features") {
-    return (
-      <section className="px-8 py-14">
-        <h2 className={`text-center text-3xl font-semibold ${headingClass}`}>
-          {getString(block.data, "headline")}
-        </h2>
-        <div className="mt-8 grid gap-4 md:grid-cols-3">
-          {getStringArray(block.data, "items").map((item) => (
-            <div key={item} className={`border p-5 ${cardClass}`}>
-              <div
-                className="mb-4 h-2 w-2 rounded-full"
-                style={{ backgroundColor: accentColor }}
-              />
-              <p className={`text-sm leading-6 ${bodyClass}`}>{item}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-    );
-  }
-
-  if (block.type === "proof") {
-    return (
-      <section className={`border-y px-8 py-12 ${isLight ? "border-slate-200" : "border-white/10"}`}>
-        <div className="grid gap-5 text-center md:grid-cols-3">
-          {getStringArray(block.data, "stats").map((stat) => (
-            <p key={stat} className={`text-sm uppercase tracking-[0.18em] ${bodyClass}`}>
-              {stat}
-            </p>
-          ))}
-        </div>
-      </section>
-    );
-  }
-
-  if (block.type === "pricing") {
-    return (
-      <section className="px-8 py-14">
-        <h2 className={`text-center text-3xl font-semibold ${headingClass}`}>
-          {getString(block.data, "headline")}
-        </h2>
-        <div className="mt-8 grid gap-4 md:grid-cols-3">
-          {getStringArray(block.data, "tiers").map((tier, index) => (
-            <div
-              key={tier}
-              className={`border p-5 ${
-                index === 1
-                  ? isLight
-                    ? "border-slate-400 bg-slate-100"
-                    : "border-white/25 bg-white/[0.06]"
-                  : cardClass
-              }`}
-            >
-              <p className={`text-lg font-semibold ${headingClass}`}>{tier}</p>
-              <p className={`mt-3 text-sm leading-6 ${mutedClass}`}>
-                Structured offer layer for controlled product execution.
-              </p>
-            </div>
-          ))}
-        </div>
-      </section>
-    );
-  }
-
-  if (block.type === "faq") {
-    return (
-      <section className="px-8 py-14">
-        <h2 className={`text-center text-3xl font-semibold ${headingClass}`}>
-          {getString(block.data, "headline")}
-        </h2>
-        <div className="mx-auto mt-8 max-w-2xl space-y-3">
-          {getStringArray(block.data, "items").map((item) => (
-            <div key={item} className={`border p-4 ${cardClass}`}>
-              <p className={`text-sm ${bodyClass}`}>{item}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-    );
-  }
-
-  if (block.type === "cta") {
-    return (
-      <section className="px-8 py-16 text-center">
-        <h2 className={`mx-auto max-w-2xl text-3xl font-semibold ${headingClass}`}>
-          {getString(block.data, "headline")}
-        </h2>
-        <span
-          aria-label="Preview CTA"
-          className="mt-8 rounded-full px-6 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-black"
-          style={{ backgroundColor: accentColor }}
-        >
-          {getString(block.data, "buttonText")}
-        </span>
-      </section>
-    );
-  }
-
-  if (block.type === "footer") {
-    return (
-      <section className={`border-t px-8 py-10 text-center ${isLight ? "border-slate-200" : "border-white/10"}`}>
-        <p className={`text-lg font-semibold ${headingClass}`}>{getString(block.data, "brand")}</p>
-        <p className={`mt-2 text-xs uppercase tracking-[0.18em] ${mutedClass}`}>
-          {getString(block.data, "tagline")}
-        </p>
-      </section>
-    );
-  }
-
-  return (
-    <section className="px-8 py-12">
-      <p className={`mx-auto max-w-2xl text-sm leading-7 ${bodyClass}`}>
-        {getString(block.data, "content")}
+    <section className="border-t px-6 py-8" style={{ borderColor: style.border }}>
+      <p className="text-[0.62rem] font-semibold uppercase tracking-[0.22em]" style={{ color: style.accent }}>
+        {formatLabel(section.type)}
+      </p>
+      <h3 className="mt-3 text-2xl font-semibold tracking-tight" style={{ color: style.text }}>
+        {section.title}
+      </h3>
+      <p className="mt-3 max-w-2xl text-sm leading-7" style={{ color: style.muted }}>
+        {section.objective}
       </p>
     </section>
   );
 }
 
-function updateBlockData(
-  config: PageConfig,
-  blockId: string,
-  key: string,
-  value: string,
-): PageConfig {
-  return {
-    ...config,
-    blocks: config.blocks.map((block) =>
-      block.id === blockId
-        ? { ...block, data: { ...block.data, [key]: value } }
-        : block,
-    ),
-  };
-}
-
 export default function BuilderClient() {
-  const [config, setConfig] = useState<PageConfig>(() => createInitialPageConfig());
-  const [selectedBlockId, setSelectedBlockId] = useState(config.blocks[0]?.id ?? "");
-  const [panel, setPanel] = useState<Panel>("blocks");
-  const [domain, setDomain] = useState<DomainConfig>({
-    type: "subdomain",
-    value: "emovel-system",
-  });
-  const [mobile, setMobile] = useState<MobileConfig>({
-    appName: "EMOVEL System",
-    packageId: "com.emovel.system",
-    platforms: ["android", "ios"],
-    version: "1.0.0",
-  });
-  const [localExport, setLocalExport] = useState<LocalExportRecord | null>(null);
+  const [spec, setSpec] = useState<BuilderSpec>(initialSpec);
+  const [manifestStatus, setManifestStatus] = useState("Ready for browser export");
 
-  const selectedBlock = useMemo(
-    () => config.blocks.find((block) => block.id === selectedBlockId) ?? null,
-    [config.blocks, selectedBlockId],
+  const validation = useMemo(() => validateSpec(spec), [spec]);
+  const outputPlan = useMemo(() => buildOutputPlan(spec), [spec]);
+  const style = useMemo(() => resolveStyle(spec), [spec]);
+  const manifestPreview = useMemo<ExportManifest>(
+    () => ({
+      generatedAt: "browser-export",
+      spec,
+      validation,
+      outputPlan,
+      style,
+    }),
+    [outputPlan, spec, style, validation],
   );
 
-  function addBlock(type: BlockType) {
-    const block = createDefaultBlock(type);
-    setConfig((current) => ({ ...current, blocks: [...current.blocks, block] }));
-    setSelectedBlockId(block.id);
-    setPanel("blocks");
+  const previewStyle: CSSProperties = {
+    backgroundColor: style.background,
+    color: style.text,
+    borderColor: style.border,
+  };
+
+  function updateSpecField<K extends keyof Omit<BuilderSpec, "sections">>(
+    key: K,
+    value: BuilderSpec[K],
+  ) {
+    setSpec((current) => ({ ...current, [key]: value }));
   }
 
-  function removeBlock(blockId: string) {
-    setConfig((current) => {
-      const nextBlocks = current.blocks.filter((block) => block.id !== blockId);
-      setSelectedBlockId(nextBlocks[0]?.id ?? "");
-      return { ...current, blocks: nextBlocks };
-    });
+  function updateSection(index: number, field: keyof BuilderSection, value: string) {
+    setSpec((current) => ({
+      ...current,
+      sections: current.sections.map((section, sectionIndex) =>
+        sectionIndex === index ? { ...section, [field]: value } : section,
+      ),
+    }));
   }
 
-  function moveBlock(blockId: string, direction: "up" | "down") {
-    setConfig((current) => {
-      const index = current.blocks.findIndex((block) => block.id === blockId);
-      const targetIndex = direction === "up" ? index - 1 : index + 1;
-
-      if (index < 0 || targetIndex < 0 || targetIndex >= current.blocks.length) {
-        return current;
-      }
-
-      const nextBlocks = [...current.blocks];
-      const [block] = nextBlocks.splice(index, 1);
-      nextBlocks.splice(targetIndex, 0, block);
-      return { ...current, blocks: nextBlocks };
-    });
+  function addSection() {
+    setSpec((current) => ({ ...current, sections: [...current.sections, createSection()] }));
   }
 
-  function updateSelectedData(key: string, value: string) {
-    if (!selectedBlock) {
-      return;
-    }
-
-    setConfig((current) => updateBlockData(current, selectedBlock.id, key, value));
+  function removeSection(index: number) {
+    setSpec((current) => ({
+      ...current,
+      sections: current.sections.filter((_, sectionIndex) => sectionIndex !== index),
+    }));
   }
 
-  function saveLocalExport() {
-    const slug = slugify(domain.value);
-    const record = {
-      id: `${Date.now()}`,
-      createdAt: new Date().toISOString(),
-      previewPath: `/builder/local-export/${slug}`,
-      blockCount: config.blocks.length,
-    };
+  async function copyManifest() {
+    const manifest = JSON.stringify(createManifest(spec), null, 2);
+    await navigator.clipboard.writeText(manifest);
+    setManifestStatus("Manifest copied to clipboard");
+  }
 
-    window.localStorage.setItem("emovel.builder.localExport", JSON.stringify(record));
-    setLocalExport(record);
+  function downloadManifest() {
+    const manifest = JSON.stringify(createManifest(spec), null, 2);
+    const blob = new Blob([manifest], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = `${outputPlan.templateName}-manifest.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+    setManifestStatus("Manifest downloaded locally");
   }
 
   return (
-    <section className="border-b border-white/[0.07] px-6 py-24 sm:py-28">
-      <div className="mx-auto max-w-7xl">
-        <div className="mb-10 max-w-3xl">
-          <p className="text-sm font-medium uppercase tracking-[0.36em] text-slate-500">
-            Builder Workspace
-          </p>
-          <h2 className="mt-4 text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-            Compose a controlled digital product page from structured blocks.
-          </h2>
+    <section
+      id="builder-workspace"
+      className="mx-auto w-full max-w-7xl scroll-mt-32 px-6 pb-28 pt-20 lg:px-10"
+    >
+      <div className="mb-10 max-w-3xl">
+        <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-white/45">
+          SPEC BUILDER
+        </p>
+        <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+          Build from a structured brief.
+        </h2>
+        <p className="mt-4 text-sm leading-7 text-white/55">
+          Compose the product specification first, then review readiness, planned output, preview, and export manifest in one controlled pipeline.
+        </p>
+      </div>
+
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.02fr)_minmax(420px,0.98fr)]">
+        <div className="space-y-5">
+          <div className="border border-white/10 bg-white/[0.035] p-6">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className={labelClass()}>Spec Composer</p>
+                <h3 className="mt-3 text-xl font-semibold text-white">Product system input</h3>
+              </div>
+              <div className="min-w-24 border border-white/10 bg-black/30 px-4 py-3 text-center">
+                <p className="text-2xl font-semibold text-white">{validation.readinessScore}</p>
+                <p className="mt-1 text-[0.6rem] uppercase tracking-[0.2em] text-white/40">Ready</p>
+              </div>
+            </div>
+
+            <div className="mt-8 grid gap-4 md:grid-cols-2">
+              <label className="space-y-2">
+                <span className={labelClass()}>Template Name</span>
+                <input
+                  className={textFieldClass()}
+                  value={spec.templateName}
+                  onChange={(event) => updateSpecField("templateName", event.target.value)}
+                />
+              </label>
+              <label className="space-y-2">
+                <span className={labelClass()}>Page Type</span>
+                <input
+                  className={textFieldClass()}
+                  value={spec.pageType}
+                  onChange={(event) => updateSpecField("pageType", event.target.value)}
+                />
+              </label>
+              <label className="space-y-2 md:col-span-2">
+                <span className={labelClass()}>Positioning</span>
+                <textarea
+                  className={`${textFieldClass()} min-h-28 resize-none leading-7`}
+                  value={spec.positioning}
+                  onChange={(event) => updateSpecField("positioning", event.target.value)}
+                />
+              </label>
+              <label className="space-y-2">
+                <span className={labelClass()}>Target Audience</span>
+                <textarea
+                  className={`${textFieldClass()} min-h-24 resize-none leading-7`}
+                  value={spec.targetAudience}
+                  onChange={(event) => updateSpecField("targetAudience", event.target.value)}
+                />
+              </label>
+              <label className="space-y-2">
+                <span className={labelClass()}>Offer</span>
+                <textarea
+                  className={`${textFieldClass()} min-h-24 resize-none leading-7`}
+                  value={spec.offer}
+                  onChange={(event) => updateSpecField("offer", event.target.value)}
+                />
+              </label>
+              <label className="space-y-2">
+                <span className={labelClass()}>Style Preset</span>
+                <select
+                  className={selectFieldClass()}
+                  value={spec.stylePreset}
+                  onChange={(event) => updateSpecField("stylePreset", event.target.value as StylePreset)}
+                >
+                  {stylePresets.map((preset) => (
+                    <option key={preset} value={preset}>
+                      {formatLabel(preset)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="space-y-2">
+                <span className={labelClass()}>Design Density</span>
+                <select
+                  className={selectFieldClass()}
+                  value={spec.designDensity}
+                  onChange={(event) => updateSpecField("designDensity", event.target.value as DesignDensity)}
+                >
+                  {densityOptions.map((density) => (
+                    <option key={density} value={density}>
+                      {formatLabel(density)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          </div>
+
+          <div className="border border-white/10 bg-white/[0.035] p-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className={labelClass()}>Sections</p>
+                <h3 className="mt-3 text-xl font-semibold text-white">Conversion path</h3>
+              </div>
+              <button
+                type="button"
+                onClick={addSection}
+                className="border border-white/15 px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-white transition hover:border-white/35"
+              >
+                Add Section
+              </button>
+            </div>
+
+            <div className="mt-6 space-y-4">
+              {spec.sections.map((section, index) => (
+                <div key={`${section.id}-${index}`} className="border border-white/10 bg-black/25 p-4">
+                  <div className="grid gap-3 md:grid-cols-[0.9fr_0.8fr_1.3fr]">
+                    <label className="space-y-2">
+                      <span className={labelClass()}>ID</span>
+                      <input
+                        className={textFieldClass()}
+                        value={section.id}
+                        onChange={(event) => updateSection(index, "id", event.target.value)}
+                      />
+                    </label>
+                    <label className="space-y-2">
+                      <span className={labelClass()}>Type</span>
+                      <select
+                        className={selectFieldClass()}
+                        value={section.type}
+                        onChange={(event) => updateSection(index, "type", event.target.value as SectionType)}
+                      >
+                        {sectionTypes.map((type) => (
+                          <option key={type} value={type}>
+                            {formatLabel(type)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="space-y-2">
+                      <span className={labelClass()}>Title</span>
+                      <input
+                        className={textFieldClass()}
+                        value={section.title}
+                        onChange={(event) => updateSection(index, "title", event.target.value)}
+                      />
+                    </label>
+                  </div>
+                  <label className="mt-3 block space-y-2">
+                    <span className={labelClass()}>Objective</span>
+                    <textarea
+                      className={`${textFieldClass()} min-h-20 resize-none leading-7`}
+                      value={section.objective}
+                      onChange={(event) => updateSection(index, "objective", event.target.value)}
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => removeSection(index)}
+                    className="mt-4 text-xs font-semibold uppercase tracking-[0.16em] text-white/45 transition hover:text-white"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid gap-5 lg:grid-cols-2">
+            <div className="border border-white/10 bg-white/[0.035] p-6">
+              <p className={labelClass()}>Validation</p>
+              <h3 className="mt-3 text-xl font-semibold text-white">
+                {validation.isReady ? "Spec ready for planning." : "Spec needs completion."}
+              </h3>
+              <div className="mt-5 h-2 bg-white/10">
+                <div
+                  className="h-full bg-white"
+                  style={{ width: `${validation.readinessScore}%` }}
+                />
+              </div>
+              <div className="mt-5 space-y-2 text-sm leading-6 text-white/55">
+                {[...validation.missingFields, ...validation.sectionIssues].length === 0 ? (
+                  <p>No missing fields detected.</p>
+                ) : (
+                  [...validation.missingFields, ...validation.sectionIssues].map((issue) => (
+                    <p key={issue}>{issue}</p>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div className="border border-white/10 bg-white/[0.035] p-6">
+              <p className={labelClass()}>Export Manifest</p>
+              <h3 className="mt-3 text-xl font-semibold text-white">Browser-only handoff</h3>
+              <p className="mt-3 text-sm leading-7 text-white/55">
+                Manifest export generates JSON in the browser. It does not write server files, run builds, or create zip archives.
+              </p>
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={copyManifest}
+                  className="border border-white/15 px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-white transition hover:border-white/35"
+                >
+                  Copy Manifest
+                </button>
+                <button
+                  type="button"
+                  onClick={downloadManifest}
+                  className="bg-white px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-black transition hover:bg-white/85"
+                >
+                  Download JSON
+                </button>
+              </div>
+              <p className="mt-4 text-xs text-white/45">{manifestStatus}</p>
+            </div>
+          </div>
         </div>
 
-        <div className="grid gap-5 lg:grid-cols-[280px_minmax(0,1fr)_320px]">
-          <aside className="border border-white/[0.08] bg-white/[0.025] p-4">
-            <div className="grid grid-cols-2 gap-2">
-              {(["blocks", "theme", "domain", "mobile", "export"] as Panel[]).map((item) => (
-                <button
-                  key={item}
-                  type="button"
-                  onClick={() => setPanel(item)}
-                  className={`border px-3 py-2 text-xs font-medium uppercase tracking-[0.16em] ${
-                    panel === item
-                      ? "border-white/30 bg-white/10 text-white"
-                      : "border-white/[0.08] bg-black/20 text-slate-500"
-                  }`}
-                >
-                  {item}
-                </button>
-              ))}
+        <div className="space-y-5">
+          <div className="border border-white/10 bg-white/[0.035] p-6">
+            <p className={labelClass()}>Output Plan</p>
+            <h3 className="mt-3 text-xl font-semibold text-white">{outputPlan.outputPath}</h3>
+            <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-1">
+              <PlanList title="Folders" items={outputPlan.folders} />
+              <PlanList title="Files" items={outputPlan.files} />
+              <PlanList title="Components" items={outputPlan.components} />
+              <PlanList title="Export Assets" items={outputPlan.exportAssets} />
             </div>
+          </div>
 
-            {panel === "blocks" ? (
-              <div className="mt-6 space-y-6">
-                <div>
-                  <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                    Page Blocks
-                  </p>
-                  <div className="space-y-2">
-                    {config.blocks.map((block, index) => (
-                      <div
-                        key={block.id}
-                        className={`border p-3 ${
-                          selectedBlockId === block.id
-                            ? "border-white/30 bg-white/[0.06]"
-                            : "border-white/[0.08] bg-black/20"
-                        }`}
-                      >
-                        <button
-                          type="button"
-                          onClick={() => setSelectedBlockId(block.id)}
-                          className="w-full text-left text-sm font-medium capitalize text-white"
-                        >
-                          {block.type}
-                        </button>
-                        <div className="mt-3 flex gap-2">
-                          <button type="button" onClick={() => moveBlock(block.id, "up")} className="text-xs text-slate-500">Up</button>
-                          <button type="button" onClick={() => moveBlock(block.id, "down")} className="text-xs text-slate-500">Down</button>
-                          <button type="button" onClick={() => removeBlock(block.id)} className="text-xs text-red-300">Remove</button>
-                          <span className="ml-auto text-xs text-slate-600">{index + 1}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                    Add Block
-                  </p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {blockTypes.map((block) => (
-                      <button
-                        key={block.type}
-                        type="button"
-                        onClick={() => addBlock(block.type)}
-                        className="border border-white/[0.08] bg-black/20 px-3 py-2 text-left text-xs text-slate-300 hover:border-white/25"
-                      >
-                        {block.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ) : null}
-
-            {panel === "theme" ? (
-              <div className="mt-6 space-y-4">
-                <label className="block text-xs uppercase tracking-[0.2em] text-slate-500">
-                  Page Title
-                  <input
-                    value={config.title}
-                    onChange={(event) => setConfig({ ...config, title: event.target.value })}
-                    className="mt-2 w-full border border-white/[0.08] bg-black/30 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none"
-                  />
-                </label>
-                <label className="block text-xs uppercase tracking-[0.2em] text-slate-500">
-                  Accent
-                  <input
-                    type="color"
-                    value={config.accentColor}
-                    onChange={(event) => setConfig({ ...config, accentColor: event.target.value })}
-                    className="mt-2 h-10 w-full border border-white/[0.08] bg-black/30"
-                  />
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {(["dark", "light"] as const).map((theme) => (
-                    <button
-                      key={theme}
-                      type="button"
-                      onClick={() => setConfig({ ...config, theme })}
-                      className={`border px-3 py-2 text-xs uppercase tracking-[0.16em] ${
-                        config.theme === theme ? "border-white/30 text-white" : "border-white/[0.08] text-slate-500"
-                      }`}
-                    >
-                      {theme}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
-            {panel === "domain" ? (
-              <div className="mt-6 space-y-4">
-                <div className="grid grid-cols-2 gap-2">
-                  {(["subdomain", "custom"] as const).map((type) => (
-                    <button
-                      key={type}
-                      type="button"
-                      onClick={() => setDomain({ ...domain, type })}
-                      className={`border px-3 py-2 text-xs uppercase tracking-[0.16em] ${
-                        domain.type === type ? "border-white/30 text-white" : "border-white/[0.08] text-slate-500"
-                      }`}
-                    >
-                      {type}
-                    </button>
-                  ))}
-                </div>
-                <input
-                  value={domain.value}
-                  onChange={(event) => setDomain({ ...domain, value: event.target.value })}
-                  placeholder={domain.type === "subdomain" ? "emovel-system" : "your-domain.com"}
-                  className="w-full border border-white/[0.08] bg-black/30 px-3 py-2 text-sm text-white outline-none"
-                />
-              </div>
-            ) : null}
-
-            {panel === "mobile" ? (
-              <div className="mt-6 space-y-4">
-                <input
-                  value={mobile.appName}
-                  onChange={(event) => setMobile({ ...mobile, appName: event.target.value })}
-                  className="w-full border border-white/[0.08] bg-black/30 px-3 py-2 text-sm text-white outline-none"
-                />
-                <input
-                  value={mobile.packageId}
-                  onChange={(event) => setMobile({ ...mobile, packageId: event.target.value })}
-                  className="w-full border border-white/[0.08] bg-black/30 px-3 py-2 text-sm text-white outline-none"
-                />
-                <p className="text-xs leading-6 text-slate-500">
-                  Platforms: {mobile.platforms.join(", ")}. Version {mobile.version}.
-                </p>
-              </div>
-            ) : null}
-
-            {panel === "export" ? (
-              <div className="mt-6 space-y-4">
-                <button
-                  type="button"
-                  onClick={saveLocalExport}
-                  className="h-12 w-full rounded-full bg-white px-5 text-xs font-semibold uppercase tracking-[0.18em] text-black"
-                >
-                  Save Local Export
-                </button>
-                {localExport ? (
-                  <div className="border border-white/[0.08] bg-black/25 p-3 text-sm leading-6 text-slate-300">
-                    <p>{localExport.previewPath}</p>
-                    <p className="text-xs text-slate-500">
-                      Local export saved. {localExport.blockCount} blocks prepared.
-                    </p>
-                  </div>
-                ) : null}
-              </div>
-            ) : null}
-          </aside>
-
-          <main className="overflow-hidden border border-white/[0.08] bg-black">
-            <div className="flex items-center justify-between border-b border-white/[0.08] px-5 py-4">
+          <div className="border border-white/10 bg-white/[0.035] p-6">
+            <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
-                  Live Canvas
-                </p>
-                <h3 className="text-lg font-semibold text-white">{config.title}</h3>
+                <p className={labelClass()}>Preview</p>
+                <h3 className="mt-3 text-xl font-semibold text-white">Generated product surface</h3>
               </div>
-              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
-                {config.blocks.length} blocks
+              <p className="text-xs uppercase tracking-[0.18em] text-white/40">
+                {formatLabel(spec.stylePreset)}
               </p>
             </div>
-            <div
-              className={config.theme === "light" ? "bg-slate-100 text-black" : "bg-black text-white"}
-              style={{ fontFamily: config.font }}
-            >
-              {config.blocks.map((block) => (
+
+            <div className="mt-6 overflow-hidden border" style={previewStyle}>
+              <section className="px-6 py-12" style={{ backgroundColor: style.surface }}>
+                <p className="text-[0.62rem] font-semibold uppercase tracking-[0.24em]" style={{ color: style.accent }}>
+                  {spec.templateName}
+                </p>
+                <h2 className="mt-5 max-w-3xl text-4xl font-semibold tracking-tight" style={{ color: style.text }}>
+                  {spec.sections[0]?.title || spec.positioning}
+                </h2>
+                <p className="mt-5 max-w-2xl text-sm leading-7" style={{ color: style.muted }}>
+                  {spec.positioning}
+                </p>
                 <div
-                  key={block.id}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => setSelectedBlockId(block.id)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      setSelectedBlockId(block.id);
-                    }
-                  }}
-                  className={`block w-full text-left ${
-                    selectedBlockId === block.id ? "ring-1 ring-white/30" : "hover:ring-1 hover:ring-white/10"
-                  }`}
+                  className="mt-8 inline-flex border px-5 py-3 text-xs font-semibold uppercase tracking-[0.18em]"
+                  style={{ borderColor: style.accent, color: style.accent }}
                 >
-                  {renderBlock(block, config.accentColor, config.theme)}
+                  Preview CTA
                 </div>
+              </section>
+
+              <section className="px-6 py-8" style={{ backgroundColor: style.background }}>
+                <p className="text-[0.62rem] font-semibold uppercase tracking-[0.22em]" style={{ color: style.accent }}>
+                  Audience
+                </p>
+                <p className="mt-3 text-sm leading-7" style={{ color: style.muted }}>
+                  {spec.targetAudience}
+                </p>
+                <p className="mt-5 text-sm leading-7" style={{ color: style.text }}>
+                  {spec.offer}
+                </p>
+              </section>
+
+              {spec.sections.slice(1).map((section, index) => (
+                <PreviewSection key={`${section.id}-${index}`} section={section} style={style} />
               ))}
             </div>
-          </main>
+          </div>
 
-          <aside className="border border-white/[0.08] bg-white/[0.025] p-5">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-              Inspector
-            </p>
-            {selectedBlock ? (
-              <div className="mt-5 space-y-4">
-                <p className="text-lg font-semibold capitalize text-white">
-                  {selectedBlock.type}
-                </p>
-                {Object.entries(selectedBlock.data).map(([key, value]) => (
-                  <label
-                    key={key}
-                    className="block text-xs uppercase tracking-[0.18em] text-slate-500"
-                  >
-                    {key}
-                    {Array.isArray(value) ? (
-                      <textarea
-                        value={value.filter((item) => typeof item === "string").join("\n")}
-                        onChange={(event) =>
-                          setConfig((current) => ({
-                            ...current,
-                            blocks: current.blocks.map((block) =>
-                              block.id === selectedBlock.id
-                                ? {
-                                    ...block,
-                                    data: {
-                                      ...block.data,
-                                      [key]: event.target.value.split("\n").filter(Boolean),
-                                    },
-                                  }
-                                : block,
-                            ),
-                          }))
-                        }
-                        rows={4}
-                        className="mt-2 w-full resize-none border border-white/[0.08] bg-black/30 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none"
-                      />
-                    ) : (
-                      <textarea
-                        value={typeof value === "string" ? value : String(value)}
-                        onChange={(event) => updateSelectedData(key, event.target.value)}
-                        rows={key === "subheadline" || key === "content" ? 4 : 2}
-                        className="mt-2 w-full resize-none border border-white/[0.08] bg-black/30 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none"
-                      />
-                    )}
-                  </label>
-                ))}
-              </div>
-            ) : (
-              <p className="mt-5 text-sm text-slate-500">Select a block to edit.</p>
-            )}
-          </aside>
+          <div className="border border-white/10 bg-white/[0.035] p-6">
+            <p className={labelClass()}>Manifest Preview</p>
+            <pre className="mt-5 max-h-80 overflow-auto bg-black/35 p-4 text-xs leading-6 text-white/55">
+              {JSON.stringify(manifestPreview, null, 2)}
+            </pre>
+          </div>
         </div>
       </div>
     </section>
+  );
+}
+
+function PlanList({ title, items }: { title: string; items: string[] }) {
+  return (
+    <div className="border border-white/10 bg-black/25 p-4">
+      <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-white/40">{title}</p>
+      <div className="mt-4 space-y-2">
+        {items.map((item) => (
+          <p key={item} className="break-words text-sm leading-6 text-white/60">
+            {item}
+          </p>
+        ))}
+      </div>
+    </div>
   );
 }

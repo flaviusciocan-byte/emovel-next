@@ -1,43 +1,68 @@
-export type BlockType =
-  | "hero"
-  | "features"
-  | "proof"
-  | "pricing"
-  | "faq"
-  | "cta"
-  | "footer"
-  | "text";
+export type SectionType = "hero" | "mechanism" | "proof" | "features" | "cta" | "faq";
 
-export interface BuilderBlock {
+export type StylePreset = "premium-dark" | "light-clean" | "editorial-warm";
+
+export type DesignDensity = "focused" | "premium" | "dense";
+
+export interface BuilderSection {
   id: string;
-  type: BlockType;
-  data: Record<string, unknown>;
-}
-
-export interface PageConfig {
+  type: SectionType;
   title: string;
-  description: string;
-  theme: "dark" | "light";
-  accentColor: string;
-  font: string;
-  blocks: BuilderBlock[];
+  objective: string;
 }
 
-export interface DomainConfig {
-  type: "subdomain" | "custom";
-  value: string;
+export interface BuilderSpec {
+  templateName: string;
+  pageType: string;
+  positioning: string;
+  targetAudience: string;
+  offer: string;
+  sections: BuilderSection[];
+  stylePreset: StylePreset;
+  designDensity: DesignDensity;
 }
 
-export interface MobileConfig {
-  appName: string;
-  packageId: string;
-  platforms: ("android" | "ios")[];
-  version: string;
+export interface ValidationResult {
+  missingFields: string[];
+  sectionIssues: string[];
+  readinessScore: number;
+  isReady: boolean;
 }
 
-export interface LocalExportRecord {
+export interface OutputSectionPlan {
   id: string;
-  createdAt: string;
-  previewPath: string;
-  blockCount: number;
+  type: SectionType;
+  title: string;
+  component: string;
+}
+
+export interface OutputPlan {
+  templateName: string;
+  outputPath: string;
+  folders: string[];
+  files: string[];
+  sections: OutputSectionPlan[];
+  components: string[];
+  exportAssets: string[];
+}
+
+export interface ResolvedStyle {
+  background: string;
+  surface: string;
+  text: string;
+  muted: string;
+  accent: string;
+  border: string;
+  font: string;
+  maxWidth: string;
+  sectionPadding: string;
+  radius: string;
+}
+
+export interface ExportManifest {
+  generatedAt: string;
+  spec: BuilderSpec;
+  validation: ValidationResult;
+  outputPlan: OutputPlan;
+  style: ResolvedStyle;
 }

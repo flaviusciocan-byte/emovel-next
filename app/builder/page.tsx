@@ -1,7 +1,6 @@
 import { createPageMetadata } from "../seo";
 import BuilderClient from "./builder-client";
-import { builderTranslations } from "@/translations/builder";
-import { detectLanguage } from "@/utils/language";
+import BuilderHeroCta from "./builder-hero-cta";
 
 export const metadata = createPageMetadata({
   title: "EMOVEL Builder — Design Your System",
@@ -11,35 +10,27 @@ export const metadata = createPageMetadata({
 });
 
 export default function Builder() {
-  const language = detectLanguage();
-  const translations = builderTranslations[language] || builderTranslations.en;
-
   return (
     <main className="min-h-screen bg-[#030405] text-slate-100">
-      <section className="relative flex min-h-screen items-center overflow-hidden border-b border-white/[0.07] px-6 pt-24 pb-24 sm:pt-28 sm:pb-32 lg:px-10">
+      <section className="relative flex min-h-screen items-center overflow-hidden border-b border-white/[0.07] px-6 pt-24 pb-32 sm:pt-28 sm:pb-40 lg:px-10">
         <div className="absolute inset-0 bg-black/55" />
         <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/60 to-transparent" />
 
         <div className="relative z-10 mx-auto mt-16 flex w-full max-w-6xl -translate-x-0 flex-col items-start gap-16 lg:-translate-x-8">
           <p className="text-sm font-medium uppercase tracking-[0.48em] text-slate-500">
-            {translations.eyebrow}
+            BUILDER
           </p>
 
           <div className="max-w-[760px]">
             <h1 className="text-5xl font-semibold leading-[0.94] tracking-tight text-white sm:text-6xl lg:text-7xl">
-              {translations.headline}
+              Design your digital product system.
             </h1>
             <p className="mt-8 text-lg font-medium uppercase tracking-[0.32em] text-slate-400">
-              {translations.subheadline}
+              Turn a product idea into a structured page, offer flow, and launch-ready asset.
             </p>
           </div>
 
-          <a
-            href="/builder"
-            className="inline-flex h-14 items-center justify-center rounded-full border border-white/15 px-8 text-sm font-semibold uppercase tracking-[0.22em] text-white hover:border-white/40 hover:bg-white hover:text-black"
-          >
-            {translations.cta}
-          </a>
+          <BuilderHeroCta label="Start Building" />
         </div>
       </section>
 
