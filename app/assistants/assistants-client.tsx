@@ -2,6 +2,7 @@
 
 import { useRef, useState, type ReactNode } from "react";
 import { ASSISTANT_ORDER, ASSISTANTS } from "./profiles";
+import MarketingOutputSystem from "./marketing-output-system";
 import { runAssistantSystem } from "./orchestrator";
 import type { AssistantId, FinalPackage, SystemPhase } from "./types";
 
@@ -297,6 +298,10 @@ export default function AssistantsClient() {
                 </Section>
               );
             })}
+
+            {result.responses.some((response) => response.assistantId === "marketing") ? (
+              <MarketingOutputSystem input={input} result={result} />
+            ) : null}
 
             <Section title="Quality Review">
               <p className="whitespace-pre-wrap text-sm leading-7 text-slate-200">
