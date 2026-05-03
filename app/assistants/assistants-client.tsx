@@ -1,6 +1,13 @@
 "use client";
 
 import { useRef, useState, type ReactNode } from "react";
+import {
+  AddCreditsModal,
+  CreditDisplay,
+  InsufficientCredits,
+  useAddCreditsModal,
+} from "../credits/credit-ui";
+import { useCredits } from "../credits/credit-store";
 import { ASSISTANT_ORDER, ASSISTANTS } from "./profiles";
 import MarketingOutputSystem from "./marketing-output-system";
 import { runAssistantSystem } from "./orchestrator";
@@ -110,6 +117,8 @@ function PhaseBar({
 }
 
 export default function AssistantsClient() {
+  const { credits, costs, canAfford, spendCredits } = useCredits();
+  const addCreditsModal = useAddCreditsModal();
   const [input, setInput] = useState("");
   const [phase, setPhase] = useState<SystemPhase>("idle");
   const [activeAssistant, setActiveAssistant] = useState<AssistantId | null>(null);
@@ -122,6 +131,12 @@ export default function AssistantsClient() {
 
   async function handleRun() {
     if (!input.trim() || isProcessing) {
+      return;
+    }
+
+    if (!spendCredits("assistants-orchestrator-generation")) {
+      setError("Insufficient credits for Assistants orchestration.");
+      addCreditsModal.showAddCredits();
       return;
     }
 
@@ -212,17 +227,39 @@ export default function AssistantsClient() {
             className="mt-4 w-full resize-none border border-white/[0.08] bg-black/35 px-4 py-4 text-sm leading-7 text-white outline-none placeholder:text-slate-600 focus:border-white/25"
           />
 
-          <div className="mt-6 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-            <div className="text-xs text-slate-500">{input.length} characters</div>
+          <div className="mt-6 grid gap-5 lg:grid-cols-[1fr_auto] lg:items-center">
+            <div className="space-y-4">
+              <div className="text-xs text-slate-500">{input.length} characters</div>
+              <CreditDisplay
+                balance={credits.balance}
+                action="assistants-orchestrator-generation"
+                compact
+              />
+            </div>
             <button
               type="button"
               onClick={handleRun}
-              disabled={!input.trim() || isProcessing}
+              disabled={
+                !input.trim() ||
+                isProcessing ||
+                !canAfford("assistants-orchestrator-generation")
+              }
               className="inline-flex h-14 items-center justify-center rounded-full bg-white px-8 text-sm font-semibold uppercase tracking-[0.22em] text-black disabled:cursor-not-allowed disabled:bg-white/25 disabled:text-white/40"
             >
-              {isProcessing ? "Processing" : "Run System"}
+              {isProcessing
+                ? "Processing"
+                : `Run System (${costs["assistants-orchestrator-generation"].estimatedCreditCost} credits)`}
             </button>
           </div>
+
+          {!canAfford("assistants-orchestrator-generation") ? (
+            <div className="mt-5">
+              <InsufficientCredits
+                action="assistants-orchestrator-generation"
+                onAddCredits={addCreditsModal.showAddCredits}
+              />
+            </div>
+          ) : null}
         </div>
 
         {phase !== "idle" ? (
@@ -311,6 +348,7 @@ export default function AssistantsClient() {
           </div>
         ) : null}
       </div>
+      <AddCreditsModal open={addCreditsModal.open} onClose={addCreditsModal.hideAddCredits} />
     </section>
   );
 }

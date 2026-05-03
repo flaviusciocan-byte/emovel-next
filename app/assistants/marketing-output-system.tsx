@@ -1,6 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import {
+  AddCreditsModal,
+  CreditDisplay,
+  InsufficientCredits,
+  useAddCreditsModal,
+} from "../credits/credit-ui";
+import { useCredits } from "../credits/credit-store";
 import type {
   FinalPackage,
   MarketingBackgroundMode,
@@ -188,6 +195,8 @@ export default function MarketingOutputSystem({
   input: string;
   result: FinalPackage;
 }) {
+  const { credits, costs, canAfford, spendCredits } = useCredits();
+  const addCreditsModal = useAddCreditsModal();
   const [marketingResult, setMarketingResult] = useState<MarketingResult | null>(null);
   const [imageModel, setImageModel] = useState<MarketingImageModel | null>(null);
   const [savedCampaigns, setSavedCampaigns] = useState<SavedMarketingCampaign[]>([]);
@@ -208,6 +217,12 @@ export default function MarketingOutputSystem({
   }, [sourceKey]);
 
   function generateSocialPack() {
+    if (!spendCredits("marketing-social-pack-generation")) {
+      setStatusMessage("Insufficient credits for Marketing Social Pack generation.");
+      addCreditsModal.showAddCredits();
+      return;
+    }
+
     const nextResult = createMarketingResult(input, result);
 
     setMarketingResult(nextResult);
@@ -286,14 +301,31 @@ export default function MarketingOutputSystem({
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={generateSocialPack}
-          className="inline-flex h-14 shrink-0 items-center justify-center rounded-full bg-white px-7 text-sm font-semibold uppercase tracking-[0.2em] text-black hover:bg-slate-200"
-        >
-          Generate Social Pack
-        </button>
+        <div className="flex shrink-0 flex-col gap-3">
+          <CreditDisplay
+            balance={credits.balance}
+            action="marketing-social-pack-generation"
+            compact
+          />
+          <button
+            type="button"
+            onClick={generateSocialPack}
+            disabled={!canAfford("marketing-social-pack-generation")}
+            className="inline-flex h-14 items-center justify-center rounded-full bg-white px-7 text-sm font-semibold uppercase tracking-[0.2em] text-black hover:bg-slate-200 disabled:cursor-not-allowed disabled:bg-white/25 disabled:text-white/40"
+          >
+            Generate Social Pack ({costs["marketing-social-pack-generation"].estimatedCreditCost} credits)
+          </button>
+        </div>
       </div>
+
+      {!canAfford("marketing-social-pack-generation") ? (
+        <div className="mt-6">
+          <InsufficientCredits
+            action="marketing-social-pack-generation"
+            onAddCredits={addCreditsModal.showAddCredits}
+          />
+        </div>
+      ) : null}
 
       {marketingResult ? (
         <div className="mt-8 grid gap-5 xl:grid-cols-[1fr_0.82fr]">
@@ -501,6 +533,7 @@ export default function MarketingOutputSystem({
           local to this browser.
         </div>
       )}
+      <AddCreditsModal open={addCreditsModal.open} onClose={addCreditsModal.hideAddCredits} />
     </div>
   );
 }

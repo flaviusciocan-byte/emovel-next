@@ -33,6 +33,39 @@ const systemShifts = [
   "From visual experiments to monetizable digital assets.",
 ];
 
+const pricingPlans = [
+  {
+    name: "Starter",
+    credits: "250 credits",
+    price: "For early product validation",
+    description:
+      "Build first systems, test prompt logic, and generate focused execution assets.",
+    features: ["Prompt Engine access", "Spec Builder exports", "Local campaign drafts"],
+  },
+  {
+    name: "Pro",
+    credits: "1,000 credits",
+    price: "For active operators",
+    description:
+      "Run product, marketing, and builder workflows with higher output volume.",
+    features: ["Social Pack generation", "Assistant orchestration", "Priority system workflows"],
+  },
+  {
+    name: "System",
+    credits: "3,000 credits",
+    price: "For commercial execution",
+    description:
+      "Operate EMOVEL as a repeatable digital product production layer.",
+    features: ["Full ecosystem usage", "Advanced image preparation", "Founder-grade output memory"],
+  },
+];
+
+const creditPacks = [
+  { name: "Focus Pack", credits: "100 credits", use: "For single-session generation" },
+  { name: "Launch Pack", credits: "500 credits", use: "For product and campaign work" },
+  { name: "Scale Pack", credits: "2,000 credits", use: "For recurring system execution" },
+];
+
 export default function Home() {
   return (
     <main className="min-h-screen bg-[#030405] text-slate-100">
@@ -134,6 +167,95 @@ export default function Home() {
               It becomes valuable when the idea, structure, offer, interface,
               and conversion path work together.
             </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="border-b border-white/[0.07] px-6 py-24 sm:py-28">
+        <div className="mx-auto max-w-6xl">
+          <div className="grid gap-10 lg:grid-cols-[0.72fr_1fr] lg:gap-16">
+            <p className="text-sm font-medium uppercase tracking-[0.36em] text-slate-500">
+              Pricing
+            </p>
+            <div>
+              <h2 className="max-w-3xl text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+                Credits turn EMOVEL into a controlled production system.
+              </h2>
+              <p className="mt-8 max-w-2xl text-lg leading-8 text-slate-300">
+                Choose a plan for ongoing execution or add credit packs when a launch cycle needs more output.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-16 grid gap-5 lg:grid-cols-3">
+            {pricingPlans.map((plan) => (
+              <article
+                key={plan.name}
+                className="flex min-h-[420px] flex-col justify-between border border-white/[0.08] bg-white/[0.025] p-8"
+              >
+                <div>
+                  <p className="text-sm font-medium uppercase tracking-[0.3em] text-slate-500">
+                    {plan.name}
+                  </p>
+                  <h3 className="mt-5 text-4xl font-semibold tracking-tight text-white">
+                    {plan.credits}
+                  </h3>
+                  <p className="mt-3 text-sm uppercase tracking-[0.2em] text-slate-500">
+                    {plan.price}
+                  </p>
+                  <p className="mt-6 leading-7 text-slate-300">{plan.description}</p>
+                  <div className="mt-8 space-y-3">
+                    {plan.features.map((feature) => (
+                      <p key={feature} className="border-t border-white/[0.08] pt-3 text-sm text-slate-400">
+                        {feature}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  disabled
+                  className="mt-10 h-13 rounded-full border border-white/15 px-6 text-sm font-semibold uppercase tracking-[0.2em] text-white/45"
+                >
+                  Upgrade
+                </button>
+              </article>
+            ))}
+          </div>
+
+          <div className="mt-10 border border-white/[0.08] bg-[#07090b] p-8">
+            <div className="flex flex-col justify-between gap-8 lg:flex-row lg:items-end">
+              <div>
+                <p className="text-sm font-medium uppercase tracking-[0.3em] text-slate-500">
+                  Credit Packs
+                </p>
+                <h3 className="mt-4 max-w-2xl text-3xl font-semibold tracking-tight text-white">
+                  Add credits when the system needs more production capacity.
+                </h3>
+              </div>
+              <p className="max-w-md text-sm leading-7 text-slate-400">
+                Payments are not connected yet. These packs define the commercial structure for the production model.
+              </p>
+            </div>
+
+            <div className="mt-8 grid gap-4 md:grid-cols-3">
+              {creditPacks.map((pack) => (
+                <div key={pack.name} className="border border-white/[0.08] bg-black/25 p-5">
+                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
+                    {pack.name}
+                  </p>
+                  <p className="mt-4 text-2xl font-semibold text-white">{pack.credits}</p>
+                  <p className="mt-3 text-sm leading-6 text-slate-400">{pack.use}</p>
+                  <button
+                    type="button"
+                    disabled
+                    className="mt-6 h-11 w-full rounded-full bg-white/10 text-xs font-semibold uppercase tracking-[0.18em] text-white/40"
+                  >
+                    Add Credits
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>

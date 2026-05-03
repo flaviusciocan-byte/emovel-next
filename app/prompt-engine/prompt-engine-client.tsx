@@ -1,6 +1,8 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { AddCreditsModal, CreditDisplay, InsufficientCredits, useAddCreditsModal } from "../credits/credit-ui";
+import { useCredits } from "../credits/credit-store";
 import { runPromptEngine } from "./engine";
 import type { EnginePhase, FinalPackage, VerificationCheck } from "./types";
 
@@ -135,6 +137,8 @@ function VerificationBadge({
 }
 
 export default function PromptEngineClient() {
+  const { credits, costs, canAfford, spendCredits } = useCredits();
+  const addCreditsModal = useAddCreditsModal();
   const [rawIdea, setRawIdea] = useState("");
   const [phase, setPhase] = useState<EnginePhase>("idle");
   const [result, setResult] = useState<FinalPackage | null>(null);
@@ -146,6 +150,12 @@ export default function PromptEngineClient() {
 
   async function handleGenerate() {
     if (!rawIdea.trim() || isProcessing) {
+      return;
+    }
+
+    if (!spendCredits("prompt-engine-generation")) {
+      setError("Insufficient credits for Prompt Engine generation.");
+      addCreditsModal.showAddCredits();
       return;
     }
 
@@ -199,16 +209,34 @@ export default function PromptEngineClient() {
             className="mt-4 w-full resize-none border border-white/[0.08] bg-black/35 px-4 py-4 text-sm leading-7 text-white outline-none placeholder:text-slate-600 focus:border-white/25"
           />
 
-          <div className="mt-6 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="mt-6 grid gap-5 lg:grid-cols-[1fr_auto] lg:items-center">
+            <CreditDisplay
+              balance={credits.balance}
+              action="prompt-engine-generation"
+              compact
+            />
             <button
               type="button"
               onClick={handleGenerate}
-              disabled={!rawIdea.trim() || isProcessing}
+              disabled={!rawIdea.trim() || isProcessing || !canAfford("prompt-engine-generation")}
               className="inline-flex h-14 items-center justify-center rounded-full bg-white px-8 text-sm font-semibold uppercase tracking-[0.22em] text-black disabled:cursor-not-allowed disabled:bg-white/25 disabled:text-white/40"
             >
-              {isProcessing ? "Processing" : "Generate Package"}
+              {isProcessing
+                ? "Processing"
+                : `Generate Package (${costs["prompt-engine-generation"].estimatedCreditCost} credits)`}
             </button>
+          </div>
 
+          {!canAfford("prompt-engine-generation") ? (
+            <div className="mt-5">
+              <InsufficientCredits
+                action="prompt-engine-generation"
+                onAddCredits={addCreditsModal.showAddCredits}
+              />
+            </div>
+          ) : null}
+
+          <div className="mt-5 flex justify-end">
             {phase !== "idle" ? <PhaseBar current={phase} /> : null}
           </div>
         </div>
@@ -274,6 +302,7 @@ export default function PromptEngineClient() {
           </div>
         ) : null}
       </div>
+      <AddCreditsModal open={addCreditsModal.open} onClose={addCreditsModal.hideAddCredits} />
     </section>
   );
 }
