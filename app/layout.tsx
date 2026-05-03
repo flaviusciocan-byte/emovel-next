@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import MobileNav from "./mobile-nav";
 import {
   defaultDescription,
   defaultTitle,
@@ -80,14 +81,16 @@ export default function RootLayout({
             <Link href="/" className="text-2xl font-semibold tracking-tight text-white">
               EMOVEL
             </Link>
-            <ul className="flex space-x-8">
+            <ul className="hidden space-x-8 md:flex">
               <li><Link href="/" className="text-slate-400 hover:text-white">Home</Link></li>
               <li><Link href="/ecosystem" className="text-slate-400 hover:text-white">Ecosystem</Link></li>
               <li><Link href="/builder" className="text-slate-400 hover:text-white">Builder</Link></li>
               <li><Link href="/assistants" className="text-slate-400 hover:text-white">Assistants</Link></li>
               <li><Link href="/prompt-engine" className="text-slate-400 hover:text-white">Prompt Engine</Link></li>
+              <li><Link href="/marketing-engine" className="text-slate-400 hover:text-white">Marketing Engine</Link></li>
               <li><Link href="/docs" className="text-slate-400 hover:text-white">Docs</Link></li>
             </ul>
+            <MobileNav />
           </nav>
         </header>
         <main className="mt-[5rem] flex flex-col">

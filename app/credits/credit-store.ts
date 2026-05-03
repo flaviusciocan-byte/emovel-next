@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { GENERATION_ROUTES } from "./model-routing";
 import type { CreditAction, CreditCost, UserCreditBalance } from "./types";
 
@@ -31,16 +31,8 @@ function writeBalance(balance: number) {
 }
 
 export function useCredits() {
-  const [credits, setCredits] = useState<UserCreditBalance>({
-    balance: startingCredits,
-    currency: "credits",
-  });
-  const [loaded, setLoaded] = useState(false);
-
-  useEffect(() => {
-    setCredits(readBalance());
-    setLoaded(true);
-  }, []);
+  const [credits, setCredits] = useState<UserCreditBalance>(() => readBalance());
+  const loaded = true;
 
   const canAfford = useMemo(
     () => (action: CreditAction) =>
