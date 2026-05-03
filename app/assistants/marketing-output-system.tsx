@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   AddCreditsModal,
   CreditDisplay,
@@ -115,10 +115,10 @@ function createImageModel(
   return {
     visualPrompt: [
       `Create a premium ${platformFormat} for EMOVEL.`,
-      `Campaign title: ${marketingResult.campaignTitle}.`,
+      `Campaign title: ${currentMarketingResult.campaignTitle}.`,
       `Background mode: ${backgroundLabels[backgroundMode]}.`,
       "Visual direction: editorial luxury-tech, controlled commercial composition, high contrast, refined spacing, no cheap stock style.",
-      `Include subtle campaign cue for: ${marketingResult.cta}.`,
+      `Include subtle campaign cue for: ${currentMarketingResult.cta}.`,
       "Do not include platform UI, logos from social networks, or fake engagement metrics.",
     ].join(" "),
     platformFormat,
@@ -199,22 +199,21 @@ export default function MarketingOutputSystem({
   const addCreditsModal = useAddCreditsModal();
   const [marketingResult, setMarketingResult] = useState<MarketingResult | null>(null);
   const [imageModel, setImageModel] = useState<MarketingImageModel | null>(null);
-  const [savedCampaigns, setSavedCampaigns] = useState<SavedMarketingCampaign[]>([]);
+  const [savedCampaigns, setSavedCampaigns] = useState<SavedMarketingCampaign[]>(() =>
+    typeof window === "undefined" ? [] : readCampaigns(),
+  );
+  const sourceKey = useMemo(() => `${input}-${result.timestamp}`, [input, result.timestamp]);
   const [selectedVariant, setSelectedVariant] = useState<"A" | "B">("A");
   const [statusMessage, setStatusMessage] = useState("Ready to generate a local Social Pack.");
+  const [activeSourceKey, setActiveSourceKey] = useState(sourceKey);
 
-  const sourceKey = useMemo(() => `${input}-${result.timestamp}`, [input, result.timestamp]);
-
-  useEffect(() => {
-    setSavedCampaigns(readCampaigns());
-  }, []);
-
-  useEffect(() => {
-    setMarketingResult(null);
-    setImageModel(null);
-    setSelectedVariant("A");
-    setStatusMessage("Ready to generate a local Social Pack.");
-  }, [sourceKey]);
+  const isActiveSource = activeSourceKey === sourceKey;
+  const currentMarketingResult = isActiveSource ? marketingResult : null;
+  const currentImageModel = isActiveSource ? imageModel : null;
+  const currentSelectedVariant = isActiveSource ? selectedVariant : "A";
+  const currentStatusMessage = isActiveSource
+    ? statusMessage
+    : "Ready to generate a local Social Pack.";
 
   function generateSocialPack() {
     if (!spendCredits("marketing-social-pack-generation")) {
@@ -225,6 +224,7 @@ export default function MarketingOutputSystem({
 
     const nextResult = createMarketingResult(input, result);
 
+    setActiveSourceKey(sourceKey);
     setMarketingResult(nextResult);
     setImageModel(createImageModel(nextResult, "Instagram/Facebook Post", "cinematic-dark"));
     setStatusMessage("Social Pack generated as a local draft.");
@@ -234,31 +234,31 @@ export default function MarketingOutputSystem({
     platformFormat: MarketingPlatformFormat,
     backgroundMode: MarketingBackgroundMode,
   ) {
-    if (!marketingResult) {
+    if (!currentMarketingResult) {
       return;
     }
 
-    setImageModel(createImageModel(marketingResult, platformFormat, backgroundMode));
+    setImageModel(createImageModel(currentMarketingResult, platformFormat, backgroundMode));
   }
 
   async function copyCaption() {
-    if (!marketingResult) {
+    if (!currentMarketingResult) {
       return;
     }
 
     await navigator.clipboard.writeText(
-      `${marketingResult.caption}\n\n${marketingResult.hashtags.join(" ")}\n\n${marketingResult.cta}`,
+      `${currentMarketingResult.caption}\n\n${currentMarketingResult.hashtags.join(" ")}\n\n${currentMarketingResult.cta}`,
     );
     setStatusMessage("Caption copied to clipboard.");
   }
 
   function saveCampaign(status: MarketingStatus = "draft", reminderNote?: string) {
-    if (!marketingResult) {
+    if (!currentMarketingResult) {
       return;
     }
 
     const saved: SavedMarketingCampaign = {
-      ...marketingResult,
+      ...currentMarketingResult,
       status,
       id: Date.now().toString(),
       savedAt: new Date().toISOString(),
@@ -277,11 +277,11 @@ export default function MarketingOutputSystem({
   }
 
   async function copyVisualPrompt() {
-    if (!imageModel) {
+    if (!currentImageModel) {
       return;
     }
 
-    await navigator.clipboard.writeText(imageModel.visualPrompt);
+    await navigator.clipboard.writeText(currentImageModel.visualPrompt);
     setStatusMessage("Visual prompt copied to clipboard.");
   }
 
@@ -327,37 +327,37 @@ export default function MarketingOutputSystem({
         </div>
       ) : null}
 
-      {marketingResult ? (
+      {currentMarketingResult ? (
         <div className="mt-8 grid gap-5 xl:grid-cols-[1fr_0.82fr]">
           <div className="space-y-5">
             <div className="grid gap-4 md:grid-cols-2">
               <button
                 type="button"
                 onClick={() => setSelectedVariant("A")}
-                className={`text-left ${selectedVariant === "A" ? "outline outline-1 outline-white/40" : ""}`}
+                className={`text-left ${currentSelectedVariant === "A" ? "outline outline-1 outline-white/40" : ""}`}
               >
                 <VisualCard
-                  label={marketingResult.visualVariantA}
+                  label={currentMarketingResult.visualVariantA}
                   ratio="aspect-square"
-                  result={marketingResult}
-                  imageModel={imageModel}
+                  result={currentMarketingResult}
+                  imageModel={currentImageModel}
                 />
               </button>
               <button
                 type="button"
                 onClick={() => setSelectedVariant("B")}
-                className={`text-left ${selectedVariant === "B" ? "outline outline-1 outline-white/40" : ""}`}
+                className={`text-left ${currentSelectedVariant === "B" ? "outline outline-1 outline-white/40" : ""}`}
               >
                 <VisualCard
-                  label={marketingResult.visualVariantB}
+                  label={currentMarketingResult.visualVariantB}
                   ratio="aspect-[9/16]"
-                  result={marketingResult}
-                  imageModel={imageModel}
+                  result={currentMarketingResult}
+                  imageModel={currentImageModel}
                 />
               </button>
             </div>
 
-            {imageModel ? (
+            {currentImageModel ? (
               <div className="border border-white/[0.08] bg-black/30 p-5">
                 <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
                   <div>
@@ -369,7 +369,7 @@ export default function MarketingOutputSystem({
                     </h4>
                   </div>
                   <span className="w-fit border border-emerald-200/20 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-200/70">
-                    {imageModel.status}
+                    {currentImageModel.status}
                   </span>
                 </div>
 
@@ -379,10 +379,10 @@ export default function MarketingOutputSystem({
                       Background Mode
                     </span>
                     <select
-                      value={imageModel.backgroundMode}
+                      value={currentImageModel.backgroundMode}
                       onChange={(event) =>
                         updateImageModel(
-                          imageModel.platformFormat,
+                          currentImageModel.platformFormat,
                           event.target.value as MarketingBackgroundMode,
                         )
                       }
@@ -401,11 +401,11 @@ export default function MarketingOutputSystem({
                       Format
                     </span>
                     <select
-                      value={imageModel.platformFormat}
+                      value={currentImageModel.platformFormat}
                       onChange={(event) =>
                         updateImageModel(
                           event.target.value as MarketingPlatformFormat,
-                          imageModel.backgroundMode,
+                          currentImageModel.backgroundMode,
                         )
                       }
                       className="w-full border border-white/[0.08] bg-black/35 px-4 py-3 text-sm text-white outline-none focus:border-white/25"
@@ -420,9 +420,9 @@ export default function MarketingOutputSystem({
                 </div>
 
                 <div className="mt-5 grid gap-3 text-sm text-slate-400 md:grid-cols-3">
-                  <p>Style: {imageModel.stylePreset}</p>
-                  <p>Size: {imageModel.size}</p>
-                  <p>Status: {imageModel.status}</p>
+                  <p>Style: {currentImageModel.stylePreset}</p>
+                  <p>Size: {currentImageModel.size}</p>
+                  <p>Status: {currentImageModel.status}</p>
                 </div>
 
                 <div className="mt-5 border border-white/[0.08] bg-white/[0.025] p-4">
@@ -430,7 +430,7 @@ export default function MarketingOutputSystem({
                     Visual Prompt
                   </p>
                   <p className="mt-3 text-sm leading-7 text-slate-300">
-                    {imageModel.visualPrompt}
+                    {currentImageModel.visualPrompt}
                   </p>
                 </div>
 
@@ -456,7 +456,7 @@ export default function MarketingOutputSystem({
             <div className="flex flex-wrap gap-3">
               <button
                 type="button"
-                disabled={!imageModel?.imageUrl}
+                disabled={!currentImageModel?.imageUrl}
                 className="cursor-not-allowed border border-white/10 px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-white/35"
               >
                 Download Image
@@ -491,17 +491,17 @@ export default function MarketingOutputSystem({
                 Campaign
               </p>
               <h4 className="mt-3 text-xl font-semibold text-white">
-                {marketingResult.campaignTitle}
+                {currentMarketingResult.campaignTitle}
               </h4>
-              <p className="mt-4 text-sm leading-7 text-slate-300">{marketingResult.caption}</p>
+              <p className="mt-4 text-sm leading-7 text-slate-300">{currentMarketingResult.caption}</p>
               <p className="mt-4 text-sm leading-7 text-slate-500">
-                {marketingResult.hashtags.join(" ")}
+                {currentMarketingResult.hashtags.join(" ")}
               </p>
               <div className="mt-5 grid gap-3 text-sm text-slate-400">
-                <p>Platform: {marketingResult.platform}</p>
-                <p>Format: {marketingResult.format}</p>
-                <p>Status: {marketingResult.status}</p>
-                <p>CTA: {marketingResult.cta}</p>
+                <p>Platform: {currentMarketingResult.platform}</p>
+                <p>Format: {currentMarketingResult.format}</p>
+                <p>Status: {currentMarketingResult.status}</p>
+                <p>CTA: {currentMarketingResult.cta}</p>
               </div>
             </div>
 
@@ -509,7 +509,7 @@ export default function MarketingOutputSystem({
               <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-slate-500">
                 Local Drafts
               </p>
-              <p className="mt-3 text-sm leading-7 text-slate-400">{statusMessage}</p>
+              <p className="mt-3 text-sm leading-7 text-slate-400">{currentStatusMessage}</p>
               <div className="mt-4 space-y-3">
                 {savedCampaigns.length === 0 ? (
                   <p className="text-sm text-slate-500">No saved campaigns yet.</p>
