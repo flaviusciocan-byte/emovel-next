@@ -1,33 +1,22 @@
-export type SectionType = "hero" | "mechanism" | "proof" | "features" | "cta" | "faq";
+import type {
+  TemplateDesignDensityV1,
+  TemplateSectionTypeV1,
+  TemplateSpecV1,
+  TemplateStylePresetV1,
+  TemplateSpecValidationResult,
+} from "./schema/v1";
 
-export type StylePreset = "premium-dark" | "light-clean" | "editorial-warm";
+export type SectionType = TemplateSectionTypeV1;
 
-export type DesignDensity = "focused" | "premium" | "dense";
+export type StylePreset = TemplateStylePresetV1;
 
-export interface BuilderSection {
-  id: string;
-  type: SectionType;
-  title: string;
-  objective: string;
-}
+export type DesignDensity = TemplateDesignDensityV1;
 
-export interface BuilderSpec {
-  templateName: string;
-  pageType: string;
-  positioning: string;
-  targetAudience: string;
-  offer: string;
-  sections: BuilderSection[];
-  stylePreset: StylePreset;
-  designDensity: DesignDensity;
-}
+export type BuilderSection = TemplateSpecV1["sections"][number];
 
-export interface ValidationResult {
-  missingFields: string[];
-  sectionIssues: string[];
-  readinessScore: number;
-  isReady: boolean;
-}
+export type BuilderSpec = TemplateSpecV1;
+
+export type ValidationResult = TemplateSpecValidationResult;
 
 export interface OutputSectionPlan {
   id: string;
@@ -60,9 +49,10 @@ export interface ResolvedStyle {
 }
 
 export interface ExportManifest {
-  generatedAt: string;
-  spec: BuilderSpec;
+  schemaVersion: "v1";
+  templateId: TemplateSpecV1["templateId"];
+  spec: TemplateSpecV1;
   validation: ValidationResult;
-  outputPlan: OutputPlan;
   style: ResolvedStyle;
+  generatedAt: string;
 }

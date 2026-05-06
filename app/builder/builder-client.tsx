@@ -9,26 +9,24 @@ import {
 } from "../credits/credit-ui";
 import { useCredits } from "../credits/credit-store";
 import RuntimePreview from "../runtime/runtime-preview";
-import { buildOutputPlan } from "./output-planner";
 import { resolveStyle } from "./style-resolver";
-import { validateSpec } from "./spec-validator";
-import type {
-  BuilderSection,
-  BuilderSpec,
-  DesignDensity,
-  ExportManifest,
-  SectionType,
-  StylePreset,
-} from "./types";
+import { TEMPLATE_REGISTRY, getTemplateMeta } from "./template-registry";
+import {
+  COMPONENT_TYPES,
+  SECTION_TYPES,
+  validateTemplateSpecV1,
+  type TemplateComponentTypeV1,
+  type TemplateIdV1,
+  type TemplateSectionTypeV1,
+  type TemplateSpecV1,
+  type TemplateSpecValidationResult,
+} from "./schema/v1";
+import type { ExportManifest } from "./types";
 
-const sectionTypes: SectionType[] = ["hero", "mechanism", "proof", "features", "cta", "faq"];
-const stylePresets: StylePreset[] = ["premium-dark", "light-clean", "editorial-warm"];
-const densityOptions: DesignDensity[] = ["focused", "premium", "dense"];
-
-const defaultBrief =
-  "A premium B2B landing page for a consultant who helps founders turn scattered execution into a controlled product system.";
-
-const initialSpec: BuilderSpec = createSpecFromBrief(defaultBrief);
+interface ImportedTemplate {
+  spec: TemplateSpecV1;
+  validation: TemplateSpecValidationResult;
+}
 
 function textFieldClass() {
   return "w-full border border-white/10 bg-black/35 px-4 py-3 text-sm text-white outline-none transition focus:border-white/35";
@@ -65,26 +63,82 @@ function summarizeBrief(brief: string) {
   return normalized.length > 150 ? `${normalized.slice(0, 147)}...` : normalized;
 }
 
-function createSpecFromBrief(brief: string): BuilderSpec {
+function defaultComponentsFor(type: TemplateSectionTypeV1): TemplateComponentTypeV1[] {
+  const map: Record<TemplateSectionTypeV1, TemplateComponentTypeV1[]> = {
+    hero: ["eyebrow", "headline", "subheadline", "button"],
+    problem: ["headline", "subheadline", "card"],
+    mechanism: ["headline", "featureGrid"],
+    offer: ["headline", "featureGrid", "mediaFrame"],
+    benefits: ["headline", "featureGrid"],
+    features: ["headline", "featureGrid", "card"],
+    proof: ["headline", "statsRow", "testimonialBlock"],
+    pricing: ["headline", "pricingBlock"],
+    comparison: ["headline", "comparisonTable"],
+    process: ["headline", "timeline"],
+    faq: ["headline", "faqAccordion"],
+    finalCta: ["headline", "subheadline", "button"],
+    footer: ["logoStrip", "button"],
+  };
+
+  return map[type];
+}
+
+function createSection(type: TemplateSectionTypeV1, index: number) {
+  return {
+    id: index === 0 ? type : `${type}-${index + 1}`,
+    type,
+    title: `${formatLabel(type)} section`,
+    objective: `Define the conversion role for the ${formatLabel(type)} section.`,
+    components: defaultComponentsFor(type),
+  };
+}
+
+function createSpecFromBrief(brief: string): TemplateSpecV1 {
   const summary = summarizeBrief(brief) || summarizeBrief(defaultBrief);
-  const templateName = slugify(summary);
+  const meta = TEMPLATE_REGISTRY.TOOL_PRIME;
 
   return {
-    templateName,
-    pageType: "landing_page",
+    schemaVersion: "v1",
+    templateId: "TOOL_PRIME",
+    templateName: slugify(summary),
+    pageType: meta.defaultPageType,
     positioning: summary,
     targetAudience:
       "Decision-makers who need a clearer system, stronger commercial logic, and a controlled path from idea to execution.",
-    offer:
-      "A structured digital product system that connects positioning, sections, proof, and conversion into one launch-ready asset.",
-    stylePreset: "premium-dark",
-    designDensity: "premium",
+    offer: {
+      type: "digital_product_system",
+      deliverable:
+        "A structured digital product system that connects positioning, sections, proof, and conversion into one launch-ready asset.",
+      format: "single_page_runtime_preview",
+    },
+    stylePreset: meta.recommendedStylePreset,
+    designDensity: meta.recommendedDensity,
+    ctaSystem: {
+      primaryCtaLabel: "Enter The System",
+      primaryCtaAction: "primary_conversion",
+      secondaryCtaLabel: "Review The Structure",
+      secondaryCtaAction: "scroll_to_mechanism",
+    },
+    pricingLogic: {
+      hasPricing: false,
+      pricingModel: "none",
+      priceAnchors: [],
+      justification: "Pricing is not configured for this generated preview.",
+    },
+    builderNotes: {
+      recommendedFor:
+        "Early product architecture, tool landing pages, and controlled commercial system previews.",
+      avoid: "Avoid unsupported claims, fake proof, and decorative sections without a conversion role.",
+      scalability:
+        "Can expand into a full Template Spec v1 with pricing, proof, comparison, and advanced CTA logic.",
+    },
     sections: [
       {
         id: "hero",
         type: "hero",
         title: "Turn the brief into a controlled product system.",
         objective: `Establish the core promise and commercial direction: ${summary}`,
+        components: defaultComponentsFor("hero"),
       },
       {
         id: "mechanism",
@@ -92,6 +146,7 @@ function createSpecFromBrief(brief: string): BuilderSpec {
         title: "Define the execution mechanism.",
         objective:
           "Explain how the system moves from raw direction to structured page logic, offer clarity, and production assets.",
+        components: defaultComponentsFor("mechanism"),
       },
       {
         id: "proof",
@@ -99,38 +154,49 @@ function createSpecFromBrief(brief: string): BuilderSpec {
         title: "Make the value legible.",
         objective:
           "Show why the structure is credible by connecting audience, outcome, workflow, and conversion path.",
+        components: defaultComponentsFor("proof"),
       },
       {
-        id: "cta",
-        type: "cta",
+        id: "final-cta",
+        type: "finalCta",
         title: "Move the user into the system.",
         objective:
           "Create a clear next step without fake publishing, fake checkout, or unsupported claims.",
+        components: defaultComponentsFor("finalCta"),
       },
     ],
   };
 }
 
-function createSection(): BuilderSection {
-  return {
-    id: `section-${Date.now().toString(36)}`,
-    type: "features",
-    title: "New system layer",
-    objective: "Define the role this section plays in the conversion path.",
-  };
+const defaultBrief =
+  "A premium B2B landing page for a consultant who helps founders turn scattered execution into a controlled product system.";
+
+const initialSpec = createSpecFromBrief(defaultBrief);
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
-function createManifest(spec: BuilderSpec): ExportManifest {
-  const validation = validateSpec(spec);
-  const outputPlan = buildOutputPlan(spec);
-  const style = resolveStyle(spec);
+function parseImportPayload(value: unknown): unknown[] {
+  if (isRecord(value) && Array.isArray(value.templates)) {
+    return value.templates;
+  }
 
+  return [value];
+}
+
+function coerceValidSpec(value: unknown): TemplateSpecV1 | null {
+  return validateTemplateSpecV1(value).isValid ? (value as TemplateSpecV1) : null;
+}
+
+function createManifest(spec: TemplateSpecV1, validation: TemplateSpecValidationResult): ExportManifest {
   return {
-    generatedAt: new Date().toISOString(),
+    schemaVersion: "v1",
+    templateId: spec.templateId,
     spec,
     validation,
-    outputPlan,
-    style,
+    style: resolveStyle(spec),
+    generatedAt: new Date().toISOString(),
   };
 }
 
@@ -138,43 +204,77 @@ export default function BuilderClient() {
   const { credits, costs, canAfford, spendCredits } = useCredits();
   const addCreditsModal = useAddCreditsModal();
   const [systemBrief, setSystemBrief] = useState(defaultBrief);
-  const [spec, setSpec] = useState<BuilderSpec>(initialSpec);
-  const [manifestStatus, setManifestStatus] = useState("Generate a system before exporting.");
+  const [spec, setSpec] = useState<TemplateSpecV1>(initialSpec);
+  const [importValue, setImportValue] = useState("");
+  const [importStatus, setImportStatus] = useState("Paste a single Template Spec v1 or a { templates: [...] } batch.");
+  const [importedTemplates, setImportedTemplates] = useState<ImportedTemplate[]>([]);
+  const [selectedImportedIndex, setSelectedImportedIndex] = useState(0);
+  const [manifestStatus, setManifestStatus] = useState("Generate or import a Template Spec v1 before exporting.");
   const [hasGenerated, setHasGenerated] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
 
-  const validation = useMemo(() => validateSpec(spec), [spec]);
-  const outputPlan = useMemo(() => buildOutputPlan(spec), [spec]);
-  const style = useMemo(() => resolveStyle(spec), [spec]);
+  const validation = useMemo(() => validateTemplateSpecV1(spec), [spec]);
+  const manifestPreview = useMemo(() => createManifest(spec, validation), [spec, validation]);
   const disabledReason = !systemBrief.trim()
     ? "Enter a system brief to generate the Builder preview."
     : !canAfford("builder-generation")
       ? "Add credits to generate the Builder system."
       : "";
-  const manifestPreview = useMemo<ExportManifest>(
-    () => ({
-      generatedAt: "browser-export",
-      spec,
-      validation,
-      outputPlan,
-      style,
-    }),
-    [outputPlan, spec, style, validation],
-  );
 
   function markDirty() {
-    setManifestStatus("Generate the system again before exporting.");
+    setManifestStatus("Template changed. Export will use the current selected spec.");
   }
 
-  function updateSpecField<K extends keyof Omit<BuilderSpec, "sections">>(
+  function updateSpecField<K extends keyof Pick<TemplateSpecV1, "templateName" | "pageType" | "positioning" | "targetAudience">>(
     key: K,
-    value: BuilderSpec[K],
+    value: TemplateSpecV1[K],
   ) {
     markDirty();
     setSpec((current) => ({ ...current, [key]: value }));
   }
 
-  function updateSection(index: number, field: keyof BuilderSection, value: string) {
+  function updateTemplateId(templateId: TemplateIdV1) {
+    const meta = getTemplateMeta(templateId);
+
+    markDirty();
+    setSpec((current) => ({
+      ...current,
+      templateId,
+      pageType: meta?.defaultPageType || current.pageType,
+      designDensity: meta?.recommendedDensity || current.designDensity,
+      stylePreset: meta?.recommendedStylePreset || current.stylePreset,
+    }));
+  }
+
+  function updateOfferField<K extends keyof TemplateSpecV1["offer"]>(
+    key: K,
+    value: TemplateSpecV1["offer"][K],
+  ) {
+    markDirty();
+    setSpec((current) => ({ ...current, offer: { ...current.offer, [key]: value } }));
+  }
+
+  function updateCtaField<K extends keyof TemplateSpecV1["ctaSystem"]>(
+    key: K,
+    value: TemplateSpecV1["ctaSystem"][K],
+  ) {
+    markDirty();
+    setSpec((current) => ({ ...current, ctaSystem: { ...current.ctaSystem, [key]: value } }));
+  }
+
+  function updatePricingModel(value: TemplateSpecV1["pricingLogic"]["pricingModel"]) {
+    markDirty();
+    setSpec((current) => ({
+      ...current,
+      pricingLogic: {
+        ...current.pricingLogic,
+        pricingModel: value,
+        hasPricing: value !== "none",
+      },
+    }));
+  }
+
+  function updateSection(index: number, field: "id" | "title" | "objective", value: string) {
     markDirty();
     setSpec((current) => ({
       ...current,
@@ -184,9 +284,44 @@ export default function BuilderClient() {
     }));
   }
 
+  function updateSectionType(index: number, type: TemplateSectionTypeV1) {
+    markDirty();
+    setSpec((current) => ({
+      ...current,
+      sections: current.sections.map((section, sectionIndex) =>
+        sectionIndex === index
+          ? { ...section, type, components: defaultComponentsFor(type) }
+          : section,
+      ),
+    }));
+  }
+
+  function toggleSectionComponent(index: number, component: TemplateComponentTypeV1) {
+    markDirty();
+    setSpec((current) => ({
+      ...current,
+      sections: current.sections.map((section, sectionIndex) => {
+        if (sectionIndex !== index) {
+          return section;
+        }
+
+        const hasComponent = section.components.includes(component);
+        return {
+          ...section,
+          components: hasComponent
+            ? section.components.filter((item) => item !== component)
+            : [...section.components, component],
+        };
+      }),
+    }));
+  }
+
   function addSection() {
     markDirty();
-    setSpec((current) => ({ ...current, sections: [...current.sections, createSection()] }));
+    setSpec((current) => ({
+      ...current,
+      sections: [...current.sections, createSection("features", current.sections.length)],
+    }));
   }
 
   function removeSection(index: number) {
@@ -195,35 +330,6 @@ export default function BuilderClient() {
       ...current,
       sections: current.sections.filter((_, sectionIndex) => sectionIndex !== index),
     }));
-  }
-
-  async function copyManifest() {
-    if (!hasGenerated) {
-      setManifestStatus("Generate the system before exporting.");
-      return;
-    }
-
-    const manifest = JSON.stringify(createManifest(spec), null, 2);
-    await navigator.clipboard.writeText(manifest);
-    setManifestStatus("Manifest copied to clipboard.");
-  }
-
-  function downloadManifest() {
-    if (!hasGenerated) {
-      setManifestStatus("Generate the system before exporting.");
-      return;
-    }
-
-    const manifest = JSON.stringify(createManifest(spec), null, 2);
-    const blob = new Blob([manifest], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-
-    link.href = url;
-    link.download = `${outputPlan.templateName}-manifest.json`;
-    link.click();
-    URL.revokeObjectURL(url);
-    setManifestStatus("Manifest downloaded locally.");
   }
 
   function generateSystem() {
@@ -239,9 +345,82 @@ export default function BuilderClient() {
     }
 
     setSpec(createSpecFromBrief(systemBrief));
+    setImportedTemplates([]);
+    setSelectedImportedIndex(0);
     setHasGenerated(true);
     setAdvancedOpen(false);
-    setManifestStatus("System generated. Advanced export is ready.");
+    setManifestStatus("Template Spec v1 generated. Export is ready.");
+  }
+
+  function importJson() {
+    try {
+      const parsed = JSON.parse(importValue) as unknown;
+      const entries = parseImportPayload(parsed).map((item) => ({
+        spec: item,
+        validation: validateTemplateSpecV1(item),
+      }));
+      const validEntries = entries
+        .map((entry) => {
+          const validSpec = coerceValidSpec(entry.spec);
+          return validSpec ? { spec: validSpec, validation: entry.validation } : null;
+        })
+        .filter((entry): entry is ImportedTemplate => Boolean(entry));
+      const invalidCount = entries.length - validEntries.length;
+
+      setImportedTemplates(validEntries);
+      setSelectedImportedIndex(0);
+
+      if (validEntries.length > 0) {
+        setSpec(validEntries[0].spec);
+        setHasGenerated(true);
+      }
+
+      setImportStatus(
+        `${validEntries.length} valid template(s), ${invalidCount} invalid template(s). Invalid templates were not loaded.`,
+      );
+      setManifestStatus("Imported Template Spec v1 is ready for selected-template export.");
+    } catch (error) {
+      setImportStatus(error instanceof Error ? error.message : "JSON import failed.");
+    }
+  }
+
+  function selectImportedTemplate(index: number) {
+    const selected = importedTemplates[index];
+
+    if (!selected) {
+      return;
+    }
+
+    setSelectedImportedIndex(index);
+    setSpec(selected.spec);
+    setManifestStatus("Selected imported template is ready for export.");
+  }
+
+  async function copyManifest() {
+    if (!hasGenerated) {
+      setManifestStatus("Generate or import a Template Spec v1 before exporting.");
+      return;
+    }
+
+    await navigator.clipboard.writeText(JSON.stringify(manifestPreview, null, 2));
+    setManifestStatus("Template Spec v1 manifest copied to clipboard.");
+  }
+
+  function downloadManifest() {
+    if (!hasGenerated) {
+      setManifestStatus("Generate or import a Template Spec v1 before exporting.");
+      return;
+    }
+
+    const blob = new Blob([JSON.stringify(manifestPreview, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = `${spec.templateName}-v1-manifest.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+    setManifestStatus("Selected Template Spec v1 manifest downloaded locally.");
   }
 
   return (
@@ -251,14 +430,14 @@ export default function BuilderClient() {
     >
       <div className="mb-10 max-w-3xl">
         <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-white/45">
-          SYSTEM BUILDER
+          TEMPLATE SPEC V1 BUILDER
         </p>
         <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-          Start with the brief. Generate the system.
+          Import, validate, and preview EMOVEL Template Specs.
         </h2>
         <p className="mt-4 text-sm leading-7 text-white/55">
-          Describe the product system once. EMOVEL turns it into sections, structure, preview,
-          and an exportable manifest without backend generation.
+          Builder now preserves commercial fields, component arrays, pricing logic, CTA systems,
+          and all Template Spec v1 section types.
         </p>
       </div>
 
@@ -284,7 +463,7 @@ export default function BuilderClient() {
                 disabled={!systemBrief.trim() || !canAfford("builder-generation")}
                 className="inline-flex h-14 w-full items-center justify-center rounded-full bg-white px-7 text-sm font-semibold uppercase tracking-[0.2em] text-black hover:bg-white/85 disabled:cursor-not-allowed disabled:bg-white/25 disabled:text-white/40"
               >
-                Generate System ({costs["builder-generation"].estimatedCreditCost} credits)
+                Generate V1 Spec ({costs["builder-generation"].estimatedCreditCost} credits)
               </button>
               {disabledReason ? (
                 <p className="mt-3 text-xs leading-6 text-slate-500">{disabledReason}</p>
@@ -303,20 +482,38 @@ export default function BuilderClient() {
         </div>
       ) : null}
 
+      <ImportPanel
+        importValue={importValue}
+        importStatus={importStatus}
+        importedTemplates={importedTemplates}
+        selectedImportedIndex={selectedImportedIndex}
+        onImportValueChange={setImportValue}
+        onImportJson={importJson}
+        onSelectImportedTemplate={selectImportedTemplate}
+      />
+
+      <ValidationReport spec={spec} validation={validation} />
+
       {hasGenerated ? (
         <div className="grid gap-5 xl:grid-cols-[minmax(0,0.95fr)_minmax(460px,1.05fr)]">
-          <SectionsPanel
+          <SpecPanel
             spec={spec}
+            onUpdateSpecField={updateSpecField}
+            onUpdateTemplateId={updateTemplateId}
+            onUpdateOfferField={updateOfferField}
+            onUpdateCtaField={updateCtaField}
+            onUpdatePricingModel={updatePricingModel}
             onAddSection={addSection}
             onRemoveSection={removeSection}
             onUpdateSection={updateSection}
+            onUpdateSectionType={updateSectionType}
+            onToggleSectionComponent={toggleSectionComponent}
           />
           <PreviewPanel spec={spec} manifest={manifestPreview} />
         </div>
       ) : (
         <div className="border border-white/10 bg-black/25 p-8 text-sm leading-7 text-white/50">
-          Generate a system to reveal sections and preview. Raw spec controls, validation, output
-          plan, and manifest export stay in Advanced.
+          Generate or import a valid Template Spec v1 to reveal the preview.
         </div>
       )}
 
@@ -327,24 +524,19 @@ export default function BuilderClient() {
           className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left"
         >
           <span className="text-xs font-semibold uppercase tracking-[0.24em] text-white">
-            Advanced
+            Advanced Export
           </span>
           <span className="text-sm text-white/45">{advancedOpen ? "Close" : "Open"}</span>
         </button>
 
         {advancedOpen ? (
-          <div className="min-w-0 space-y-5 overflow-hidden border-t border-white/10 p-4 sm:p-6">
-            <RawSpecPanel spec={spec} onUpdateSpecField={updateSpecField} />
-            <ValidationPanel validation={validation} />
-            <OutputPlanPanel outputPath={outputPlan.outputPath} outputPlan={outputPlan} />
-            <ManifestPanel
-              manifestStatus={manifestStatus}
-              manifestPreview={manifestPreview}
-              canExport={hasGenerated}
-              onCopy={copyManifest}
-              onDownload={downloadManifest}
-            />
-          </div>
+          <ManifestPanel
+            manifestStatus={manifestStatus}
+            manifestPreview={manifestPreview}
+            canExport={hasGenerated}
+            onCopy={copyManifest}
+            onDownload={downloadManifest}
+          />
         ) : null}
       </div>
 
@@ -353,23 +545,161 @@ export default function BuilderClient() {
   );
 }
 
-function SectionsPanel({
+function ImportPanel({
+  importValue,
+  importStatus,
+  importedTemplates,
+  selectedImportedIndex,
+  onImportValueChange,
+  onImportJson,
+  onSelectImportedTemplate,
+}: {
+  importValue: string;
+  importStatus: string;
+  importedTemplates: ImportedTemplate[];
+  selectedImportedIndex: number;
+  onImportValueChange: (value: string) => void;
+  onImportJson: () => void;
+  onSelectImportedTemplate: (index: number) => void;
+}) {
+  return (
+    <div className="mb-5 border border-white/10 bg-black/25 p-6 sm:p-8">
+      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+        <label className="space-y-3">
+          <span className={labelClass()}>JSON Import</span>
+          <textarea
+            value={importValue}
+            onChange={(event) => onImportValueChange(event.target.value)}
+            rows={8}
+            placeholder={'{ "templates": [ ... ] } or a single TemplateSpecV1 object'}
+            className="w-full resize-none border border-white/10 bg-black/35 px-5 py-4 font-mono text-xs leading-6 text-white outline-none transition placeholder:text-white/25 focus:border-white/35"
+          />
+        </label>
+        <div className="flex flex-col justify-between gap-4">
+          <div>
+            <p className={labelClass()}>Import Status</p>
+            <p className="mt-3 text-sm leading-7 text-white/55">{importStatus}</p>
+          </div>
+          <button
+            type="button"
+            onClick={onImportJson}
+            className="inline-flex h-14 items-center justify-center rounded-full bg-white px-7 text-sm font-semibold uppercase tracking-[0.2em] text-black hover:bg-white/85"
+          >
+            Validate Import
+          </button>
+        </div>
+      </div>
+
+      {importedTemplates.length > 1 ? (
+        <div className="mt-6 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+          {importedTemplates.map((entry, index) => (
+            <button
+              key={`${entry.spec.templateId}-${entry.spec.templateName}-${index}`}
+              type="button"
+              onClick={() => onSelectImportedTemplate(index)}
+              className={`border p-4 text-left ${
+                selectedImportedIndex === index
+                  ? "border-white/40 bg-white/[0.08]"
+                  : "border-white/10 bg-white/[0.025]"
+              }`}
+            >
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">
+                {entry.spec.templateId}
+              </p>
+              <p className="mt-2 text-sm font-semibold text-white">{entry.spec.templateName}</p>
+              <p className="mt-2 text-xs text-white/45">
+                Score: {entry.validation.readinessScore}
+              </p>
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function ValidationReport({
   spec,
+  validation,
+}: {
+  spec: TemplateSpecV1;
+  validation: TemplateSpecValidationResult;
+}) {
+  const unsupportedFields =
+    validation.warnings.filter((warning) => warning.includes("Unknown top-level field")).length;
+
+  return (
+    <div className="mb-5 grid gap-5 lg:grid-cols-[0.7fr_1fr]">
+      <div className="border border-white/10 bg-white/[0.035] p-5">
+        <p className={labelClass()}>Validation Report</p>
+        <div className="mt-4 grid gap-3 text-sm text-white/60">
+          <p>Template ID: {spec.templateId}</p>
+          <p>Schema: {spec.schemaVersion}</p>
+          <p>Readiness: {validation.readinessScore}</p>
+          <p>Sections: {spec.sections.length}</p>
+          <p>Warnings: {validation.warnings.length}</p>
+          <p>Errors: {validation.errors.length}</p>
+          <p>Unsupported fields/components: {unsupportedFields}</p>
+        </div>
+      </div>
+      <div className="border border-white/10 bg-black/25 p-5">
+        <p className={labelClass()}>Errors / Warnings</p>
+        <div className="mt-4 space-y-2 text-sm leading-6">
+          {validation.errors.length === 0 && validation.warnings.length === 0 ? (
+            <p className="text-white/55">No validation issues detected.</p>
+          ) : null}
+          {validation.errors.map((error) => (
+            <p key={error} className="text-red-200">{error}</p>
+          ))}
+          {validation.warnings.map((warning) => (
+            <p key={warning} className="text-amber-100">{warning}</p>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SpecPanel({
+  spec,
+  onUpdateSpecField,
+  onUpdateTemplateId,
+  onUpdateOfferField,
+  onUpdateCtaField,
+  onUpdatePricingModel,
   onAddSection,
   onRemoveSection,
   onUpdateSection,
+  onUpdateSectionType,
+  onToggleSectionComponent,
 }: {
-  spec: BuilderSpec;
+  spec: TemplateSpecV1;
+  onUpdateSpecField: <K extends keyof Pick<TemplateSpecV1, "templateName" | "pageType" | "positioning" | "targetAudience">>(
+    key: K,
+    value: TemplateSpecV1[K],
+  ) => void;
+  onUpdateTemplateId: (templateId: TemplateIdV1) => void;
+  onUpdateOfferField: <K extends keyof TemplateSpecV1["offer"]>(
+    key: K,
+    value: TemplateSpecV1["offer"][K],
+  ) => void;
+  onUpdateCtaField: <K extends keyof TemplateSpecV1["ctaSystem"]>(
+    key: K,
+    value: TemplateSpecV1["ctaSystem"][K],
+  ) => void;
+  onUpdatePricingModel: (value: TemplateSpecV1["pricingLogic"]["pricingModel"]) => void;
   onAddSection: () => void;
   onRemoveSection: (index: number) => void;
-  onUpdateSection: (index: number, field: keyof BuilderSection, value: string) => void;
+  onUpdateSection: (index: number, field: "id" | "title" | "objective", value: string) => void;
+  onUpdateSectionType: (index: number, type: TemplateSectionTypeV1) => void;
+  onToggleSectionComponent: (index: number, component: TemplateComponentTypeV1) => void;
 }) {
   return (
     <div className="min-w-0 overflow-hidden border border-white/10 bg-white/[0.035] p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className={labelClass()}>Sections</p>
-          <h3 className="mt-3 text-xl font-semibold text-white">Generated conversion path</h3>
+          <p className={labelClass()}>Template Spec</p>
+          <h3 className="mt-3 text-xl font-semibold text-white">Selected v1 template</h3>
         </div>
         <button
           type="button"
@@ -380,13 +710,118 @@ function SectionsPanel({
         </button>
       </div>
 
-      <div className="mt-6 space-y-4">
+      <div className="mt-6 grid gap-4 lg:grid-cols-2">
+        <label className="space-y-2">
+          <span className={labelClass()}>Template ID</span>
+          <select
+            className={selectFieldClass()}
+            value={spec.templateId}
+            onChange={(event) => onUpdateTemplateId(event.target.value as TemplateIdV1)}
+          >
+            {Object.values(TEMPLATE_REGISTRY).map((entry) => (
+              <option key={entry.templateId} value={entry.templateId}>
+                {entry.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="space-y-2">
+          <span className={labelClass()}>Template Name</span>
+          <input
+            className={textFieldClass()}
+            value={spec.templateName}
+            onChange={(event) => onUpdateSpecField("templateName", event.target.value)}
+          />
+        </label>
+        <label className="space-y-2">
+          <span className={labelClass()}>Page Type</span>
+          <input
+            className={textFieldClass()}
+            value={spec.pageType}
+            onChange={(event) => onUpdateSpecField("pageType", event.target.value)}
+          />
+        </label>
+        <label className="space-y-2">
+          <span className={labelClass()}>Pricing Model</span>
+          <select
+            className={selectFieldClass()}
+            value={spec.pricingLogic.pricingModel}
+            onChange={(event) =>
+              onUpdatePricingModel(event.target.value as TemplateSpecV1["pricingLogic"]["pricingModel"])
+            }
+          >
+            {["none", "one-time", "tiered", "subscription", "application"].map((model) => (
+              <option key={model} value={model}>
+                {formatLabel(model)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="space-y-2 lg:col-span-2">
+          <span className={labelClass()}>Positioning</span>
+          <textarea
+            className={`${textFieldClass()} min-h-24 resize-none leading-7`}
+            value={spec.positioning}
+            onChange={(event) => onUpdateSpecField("positioning", event.target.value)}
+          />
+        </label>
+        <label className="space-y-2 lg:col-span-2">
+          <span className={labelClass()}>Target Audience</span>
+          <textarea
+            className={`${textFieldClass()} min-h-20 resize-none leading-7`}
+            value={spec.targetAudience}
+            onChange={(event) => onUpdateSpecField("targetAudience", event.target.value)}
+          />
+        </label>
+        <label className="space-y-2">
+          <span className={labelClass()}>Offer Type</span>
+          <input
+            className={textFieldClass()}
+            value={spec.offer.type}
+            onChange={(event) => onUpdateOfferField("type", event.target.value)}
+          />
+        </label>
+        <label className="space-y-2">
+          <span className={labelClass()}>Offer Format</span>
+          <input
+            className={textFieldClass()}
+            value={spec.offer.format}
+            onChange={(event) => onUpdateOfferField("format", event.target.value)}
+          />
+        </label>
+        <label className="space-y-2 lg:col-span-2">
+          <span className={labelClass()}>Offer Deliverable</span>
+          <textarea
+            className={`${textFieldClass()} min-h-20 resize-none leading-7`}
+            value={spec.offer.deliverable}
+            onChange={(event) => onUpdateOfferField("deliverable", event.target.value)}
+          />
+        </label>
+        <label className="space-y-2">
+          <span className={labelClass()}>Primary CTA</span>
+          <input
+            className={textFieldClass()}
+            value={spec.ctaSystem.primaryCtaLabel}
+            onChange={(event) => onUpdateCtaField("primaryCtaLabel", event.target.value)}
+          />
+        </label>
+        <label className="space-y-2">
+          <span className={labelClass()}>Secondary CTA</span>
+          <input
+            className={textFieldClass()}
+            value={spec.ctaSystem.secondaryCtaLabel}
+            onChange={(event) => onUpdateCtaField("secondaryCtaLabel", event.target.value)}
+          />
+        </label>
+      </div>
+
+      <div className="mt-8 space-y-4">
         {spec.sections.map((section, index) => (
           <div
             key={`${section.id}-${index}`}
             className="min-w-0 overflow-hidden border border-white/10 bg-black/25 p-4"
           >
-            <div className="grid min-w-0 gap-3 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,0.8fr)_minmax(0,1.3fr)]">
+            <div className="grid min-w-0 gap-3 lg:grid-cols-[0.9fr_0.8fr_1.3fr]">
               <label className="space-y-2">
                 <span className={labelClass()}>ID</span>
                 <input
@@ -401,10 +836,10 @@ function SectionsPanel({
                   className={selectFieldClass()}
                   value={section.type}
                   onChange={(event) =>
-                    onUpdateSection(index, "type", event.target.value as SectionType)
+                    onUpdateSectionType(index, event.target.value as TemplateSectionTypeV1)
                   }
                 >
-                  {sectionTypes.map((type) => (
+                  {SECTION_TYPES.map((type) => (
                     <option key={type} value={type}>
                       {formatLabel(type)}
                     </option>
@@ -428,6 +863,22 @@ function SectionsPanel({
                 onChange={(event) => onUpdateSection(index, "objective", event.target.value)}
               />
             </label>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {COMPONENT_TYPES.map((component) => (
+                <button
+                  key={component}
+                  type="button"
+                  onClick={() => onToggleSectionComponent(index, component)}
+                  className={`border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] ${
+                    section.components.includes(component)
+                      ? "border-white/35 bg-white/10 text-white"
+                      : "border-white/10 text-white/35"
+                  }`}
+                >
+                  {component}
+                </button>
+              ))}
+            </div>
             <button
               type="button"
               onClick={() => onRemoveSection(index)}
@@ -446,7 +897,7 @@ function PreviewPanel({
   spec,
   manifest,
 }: {
-  spec: BuilderSpec;
+  spec: TemplateSpecV1;
   manifest: ExportManifest;
 }) {
   return (
@@ -454,149 +905,15 @@ function PreviewPanel({
       <div className="flex items-center justify-between gap-4">
         <div>
           <p className={labelClass()}>Preview</p>
-          <h3 className="mt-3 text-xl font-semibold text-white">Generated product surface</h3>
+          <h3 className="mt-3 text-xl font-semibold text-white">Template Spec v1 runtime</h3>
         </div>
         <p className="text-xs uppercase tracking-[0.18em] text-white/40">
-          {formatLabel(spec.stylePreset)}
+          {formatLabel(spec.stylePreset)} / {formatLabel(spec.designDensity)}
         </p>
       </div>
 
       <div className="mt-6">
         <RuntimePreview manifest={manifest} />
-      </div>
-    </div>
-  );
-}
-
-function RawSpecPanel({
-  spec,
-  onUpdateSpecField,
-}: {
-  spec: BuilderSpec;
-  onUpdateSpecField: <K extends keyof Omit<BuilderSpec, "sections">>(
-    key: K,
-    value: BuilderSpec[K],
-  ) => void;
-}) {
-  return (
-    <div className="min-w-0 overflow-hidden border border-white/10 bg-black/25 p-5 sm:p-6">
-      <p className={labelClass()}>Raw Spec</p>
-      <h3 className="mt-3 text-xl font-semibold text-white">Product system input</h3>
-      <div className="mt-6 grid min-w-0 gap-4 lg:grid-cols-2">
-        <label className="space-y-2">
-          <span className={labelClass()}>Template Name</span>
-          <input
-            className={textFieldClass()}
-            value={spec.templateName}
-            onChange={(event) => onUpdateSpecField("templateName", event.target.value)}
-          />
-        </label>
-        <label className="space-y-2">
-          <span className={labelClass()}>Page Type</span>
-          <input
-            className={textFieldClass()}
-            value={spec.pageType}
-            onChange={(event) => onUpdateSpecField("pageType", event.target.value)}
-          />
-        </label>
-        <label className="space-y-2 md:col-span-2">
-          <span className={labelClass()}>Positioning</span>
-          <textarea
-            className={`${textFieldClass()} min-h-28 resize-none leading-7`}
-            value={spec.positioning}
-            onChange={(event) => onUpdateSpecField("positioning", event.target.value)}
-          />
-        </label>
-        <label className="space-y-2">
-          <span className={labelClass()}>Target Audience</span>
-          <textarea
-            className={`${textFieldClass()} min-h-24 resize-none leading-7`}
-            value={spec.targetAudience}
-            onChange={(event) => onUpdateSpecField("targetAudience", event.target.value)}
-          />
-        </label>
-        <label className="space-y-2">
-          <span className={labelClass()}>Offer</span>
-          <textarea
-            className={`${textFieldClass()} min-h-24 resize-none leading-7`}
-            value={spec.offer}
-            onChange={(event) => onUpdateSpecField("offer", event.target.value)}
-          />
-        </label>
-        <label className="space-y-2">
-          <span className={labelClass()}>Style Preset</span>
-          <select
-            className={selectFieldClass()}
-            value={spec.stylePreset}
-            onChange={(event) => onUpdateSpecField("stylePreset", event.target.value as StylePreset)}
-          >
-            {stylePresets.map((preset) => (
-              <option key={preset} value={preset}>
-                {formatLabel(preset)}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="space-y-2">
-          <span className={labelClass()}>Design Density</span>
-          <select
-            className={selectFieldClass()}
-            value={spec.designDensity}
-            onChange={(event) =>
-              onUpdateSpecField("designDensity", event.target.value as DesignDensity)
-            }
-          >
-            {densityOptions.map((density) => (
-              <option key={density} value={density}>
-                {formatLabel(density)}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
-    </div>
-  );
-}
-
-function ValidationPanel({ validation }: { validation: ReturnType<typeof validateSpec> }) {
-  return (
-    <div className="min-w-0 overflow-hidden border border-white/10 bg-black/25 p-5 sm:p-6">
-      <p className={labelClass()}>Validation</p>
-      <h3 className="mt-3 text-xl font-semibold text-white">
-        {validation.isReady ? "Spec ready for planning." : "Spec needs completion."}
-      </h3>
-      <div className="mt-5 h-2 bg-white/10">
-        <div className="h-full bg-white" style={{ width: `${validation.readinessScore}%` }} />
-      </div>
-      <div className="mt-5 space-y-2 text-sm leading-6 text-white/55">
-        {[...validation.missingFields, ...validation.sectionIssues].length === 0 ? (
-          <p>No missing fields detected.</p>
-        ) : (
-          [...validation.missingFields, ...validation.sectionIssues].map((issue) => (
-            <p key={issue}>{issue}</p>
-          ))
-        )}
-      </div>
-    </div>
-  );
-}
-
-function OutputPlanPanel({
-  outputPath,
-  outputPlan,
-}: {
-  outputPath: string;
-  outputPlan: ReturnType<typeof buildOutputPlan>;
-}) {
-  return (
-    <div className="min-w-0 overflow-hidden border border-white/10 bg-black/25 p-5 sm:p-6">
-      <p className={labelClass()}>Output Plan</p>
-      <h3 className="mt-3 text-xl font-semibold text-white">{outputPath}</h3>
-      <div className="mt-6 grid min-w-0 gap-4 lg:grid-cols-2">
-        <PlanList title="Folders" items={outputPlan.folders} />
-        <PlanList title="Files" items={outputPlan.files} />
-        <PlanList title="Components" items={outputPlan.components} />
-        <PlanList title="Export Assets" items={outputPlan.exportAssets} />
       </div>
     </div>
   );
@@ -616,12 +933,12 @@ function ManifestPanel({
   onDownload: () => void;
 }) {
   return (
-    <div className="min-w-0 overflow-hidden border border-white/10 bg-black/25 p-5 sm:p-6">
+    <div className="min-w-0 overflow-hidden border-t border-white/10 p-4 sm:p-6">
       <p className={labelClass()}>Export Manifest</p>
-      <h3 className="mt-3 text-xl font-semibold text-white">Browser-only handoff</h3>
+      <h3 className="mt-3 text-xl font-semibold text-white">Selected Template Spec v1 only</h3>
       <p className="mt-3 text-sm leading-7 text-white/55">
-        Manifest export generates JSON in the browser. It does not write server files, run builds,
-        or create zip archives.
+        Batch imports can be previewed one template at a time. Export currently writes the selected
+        template only.
       </p>
       <div className="mt-6 flex flex-col gap-3 sm:flex-row">
         <button
@@ -645,23 +962,6 @@ function ManifestPanel({
       <pre className="mt-5 max-h-80 max-w-full overflow-auto bg-black/35 p-4 text-xs leading-6 text-white/55">
         {JSON.stringify(manifestPreview, null, 2)}
       </pre>
-    </div>
-  );
-}
-
-function PlanList({ title, items }: { title: string; items: string[] }) {
-  return (
-    <div className="min-w-0 overflow-hidden border border-white/10 bg-black/25 p-4">
-      <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-white/40">
-        {title}
-      </p>
-      <div className="mt-4 space-y-2">
-        {items.map((item) => (
-          <p key={item} className="break-words text-sm leading-6 text-white/60">
-            {item}
-          </p>
-        ))}
-      </div>
     </div>
   );
 }

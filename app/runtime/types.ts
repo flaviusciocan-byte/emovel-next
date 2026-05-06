@@ -1,24 +1,32 @@
-export type RuntimeSectionType = "hero" | "mechanism" | "proof" | "features" | "cta" | "faq";
+import type {
+  TemplateCtaSystemV1,
+  TemplateDesignDensityV1,
+  TemplateOfferV1,
+  TemplatePricingLogicV1,
+  TemplateSectionV1,
+  TemplateSectionTypeV1,
+  TemplateStylePresetV1,
+} from "../builder/schema/v1";
 
-export type RuntimeStylePreset = "premium-dark" | "light-clean" | "editorial-warm";
+export type RuntimeSectionType = TemplateSectionTypeV1;
 
-export type RuntimeDesignDensity = "focused" | "premium" | "dense";
+export type RuntimeStylePreset = TemplateStylePresetV1;
 
-export interface RuntimeSection {
-  id: string;
-  type: RuntimeSectionType;
-  title: string;
-  objective: string;
-  content?: string[];
-}
+export type RuntimeDesignDensity = TemplateDesignDensityV1;
+
+export type RuntimeSection = TemplateSectionV1;
 
 export interface RuntimeManifest {
   version: "1";
+  schemaVersion: "v1";
+  templateId?: string;
   templateName: string;
   pageType: string;
   positioning: string;
   targetAudience: string;
-  offer: string;
+  offer: TemplateOfferV1;
+  ctaSystem: TemplateCtaSystemV1;
+  pricingLogic: TemplatePricingLogicV1;
   stylePreset: RuntimeStylePreset;
   designDensity: RuntimeDesignDensity;
   sections: RuntimeSection[];
