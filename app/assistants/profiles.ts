@@ -35,7 +35,7 @@ export const ASSISTANTS: Record<AssistantId, AssistantMeta> = {
       "Clarify positioning and benefits",
       "Shape conversion-focused messages",
     ],
-    color: "#A8E6CF",
+    color: "#C7B16A",
   },
   maintenance: {
     id: "maintenance",
@@ -47,7 +47,7 @@ export const ASSISTANTS: Record<AssistantId, AssistantMeta> = {
       "Identify gaps and contradictions",
       "Recommend optimizations",
     ],
-    color: "#87CEEB",
+    color: "#B8B8B8",
   },
   commerce: {
     id: "commerce",
@@ -59,7 +59,7 @@ export const ASSISTANTS: Record<AssistantId, AssistantMeta> = {
       "Translate value into commercial logic",
       "Clarify conversion path",
     ],
-    color: "#FFD700",
+    color: "#D4C08A",
   },
 };
 

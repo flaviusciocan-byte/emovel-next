@@ -1,26 +1,49 @@
 "use client";
 
-import { useRef, useState, type ReactNode } from "react";
+import { useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import {
   AddCreditsModal,
   CreditDisplay,
   InsufficientCredits,
   useAddCreditsModal,
 } from "../credits/credit-ui";
+import { assistantsTranslations } from "../translations/assistants";
+import { detectLanguage } from "../utils/language";
 import { useCredits } from "../credits/credit-store";
 import { ASSISTANT_ORDER, ASSISTANTS } from "./profiles";
 import MarketingOutputSystem from "./marketing-output-system";
 import { runAssistantSystem } from "./orchestrator";
 import type { AssistantId, FinalPackage, SystemPhase } from "./types";
 
-const phases: { key: SystemPhase; label: string }[] = [
-  { key: "orchestrating", label: "Planning" },
-  { key: "executing", label: "Executing" },
-  { key: "reviewing", label: "Reviewing" },
-  { key: "complete", label: "Complete" },
-];
+type Language = Extract<keyof typeof assistantsTranslations, string>;
 
-function CopyButton({ text }: { text: string }) {
+function getSupportedLanguage(language: string): Language {
+  return language in assistantsTranslations ? language : "en";
+}
+
+function subscribeToLanguageChange(onStoreChange: () => void) {
+  window.addEventListener("languagechange", onStoreChange);
+
+  return () => {
+    window.removeEventListener("languagechange", onStoreChange);
+  };
+}
+
+function getLanguageSnapshot(): Language {
+  return getSupportedLanguage(detectLanguage());
+}
+
+function useAssistantsCopy() {
+  const language = useSyncExternalStore(
+    subscribeToLanguageChange,
+    getLanguageSnapshot,
+    () => "en",
+  );
+
+  return assistantsTranslations[language];
+}
+
+function CopyButton({ text, copiedLabel, copyLabel }: { text: string; copiedLabel: string; copyLabel: string }) {
   const [copied, setCopied] = useState(false);
 
   async function handleCopy() {
@@ -35,7 +58,7 @@ function CopyButton({ text }: { text: string }) {
       onClick={handleCopy}
       className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] font-medium uppercase tracking-[0.18em] text-slate-300 hover:border-white/30 hover:text-white"
     >
-      {copied ? "Copied" : "Copy"}
+      {copied ? copiedLabel : copyLabel}
     </button>
   );
 }
@@ -44,11 +67,19 @@ function Section({
   title,
   children,
   copyText,
+  copyLabel,
+  copiedLabel,
+  openLabel,
+  closeLabel,
   defaultOpen = true,
 }: {
   title: string;
   children: ReactNode;
   copyText?: string;
+  copyLabel: string;
+  copiedLabel: string;
+  openLabel: string;
+  closeLabel: string;
   defaultOpen?: boolean;
 }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -64,8 +95,16 @@ function Section({
           {title}
         </span>
         <span className="flex items-center gap-3">
-          {copyText ? <CopyButton text={copyText} /> : null}
-          <span className="text-sm text-slate-500">{open ? "Close" : "Open"}</span>
+          {copyText ? (
+            <CopyButton
+              text={copyText}
+              copiedLabel={copiedLabel}
+              copyLabel={copyLabel}
+            />
+          ) : null}
+          <span className="text-sm text-slate-500">
+            {open ? closeLabel : openLabel}
+          </span>
         </span>
       </button>
       {open ? <div className="space-y-4 px-6 pb-6">{children}</div> : null}
@@ -76,10 +115,20 @@ function Section({
 function PhaseBar({
   current,
   activeAssistant,
+  activeAssistantSuffix,
+  phaseLabels,
 }: {
   current: SystemPhase;
   activeAssistant: AssistantId | null;
+  activeAssistantSuffix: string;
+  phaseLabels: Record<"orchestrating" | "executing" | "reviewing" | "complete", string>;
 }) {
+  const phases: { key: Exclude<SystemPhase, "idle" | "error">; label: string }[] = [
+    { key: "orchestrating", label: phaseLabels.orchestrating },
+    { key: "executing", label: phaseLabels.executing },
+    { key: "reviewing", label: phaseLabels.reviewing },
+    { key: "complete", label: phaseLabels.complete },
+  ];
   const currentIndex = phases.findIndex((phase) => phase.key === current);
   const activeProfile = activeAssistant ? ASSISTANTS[activeAssistant] : null;
 
@@ -95,7 +144,7 @@ function PhaseBar({
               key={phase.key}
               className={`border px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.18em] ${
                 isPast
-                  ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-300"
+                  ? "border-[#D4C08A]/35 bg-[#D4C08A]/10 text-[#D4C08A]"
                   : isCurrent
                     ? "border-white/30 bg-white/10 text-white"
                     : "border-white/[0.08] bg-white/[0.02] text-slate-600"
@@ -109,14 +158,66 @@ function PhaseBar({
       {current === "executing" && activeProfile ? (
         <p className="text-xs text-slate-400">
           <span style={{ color: activeProfile.color }}>{activeProfile.name}</span>{" "}
-          is working.
+          {activeAssistantSuffix}
         </p>
       ) : null}
     </div>
   );
 }
 
+export function AssistantsHeroContent() {
+  const copy = useAssistantsCopy().hero;
+
+  return (
+    <>
+      <p className="text-sm font-medium uppercase tracking-[0.48em] text-slate-500">
+        {copy.eyebrow}
+      </p>
+
+      <div className="max-w-[760px]">
+        <h1 className="text-5xl font-semibold leading-[0.94] tracking-tight text-white sm:text-6xl lg:text-7xl">
+          {copy.headline}
+        </h1>
+        <p className="mt-8 max-w-3xl text-lg font-medium uppercase leading-8 tracking-[0.24em] text-slate-400">
+          {copy.subheadline}
+        </p>
+      </div>
+
+      <a
+        href="#assistant-system"
+        className="inline-flex h-14 items-center justify-center rounded-full border border-white/15 px-8 text-sm font-semibold uppercase tracking-[0.22em] text-white hover:border-white/40 hover:bg-white hover:text-black"
+      >
+        {copy.cta}
+      </a>
+    </>
+  );
+}
+
+export function AssistantsFinalCtaContent() {
+  const copy = useAssistantsCopy().finalCta;
+
+  return (
+    <>
+      <div>
+        <p className="text-sm font-medium uppercase tracking-[0.36em] text-slate-500">
+          {copy.eyebrow}
+        </p>
+        <h2 className="mt-4 max-w-3xl text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+          {copy.headline}
+        </h2>
+      </div>
+      <a
+        href="mailto:hello@emovel.com"
+        className="inline-flex h-14 shrink-0 items-center justify-center rounded-full bg-white px-8 text-sm font-semibold uppercase tracking-[0.22em] text-black hover:bg-slate-200"
+      >
+        {copy.cta}
+      </a>
+    </>
+  );
+}
+
 export default function AssistantsClient() {
+  const copy = useAssistantsCopy().client;
   const { credits, costs, canAfford, spendCredits } = useCredits();
   const addCreditsModal = useAddCreditsModal();
   const [input, setInput] = useState("");
@@ -129,11 +230,11 @@ export default function AssistantsClient() {
   const isProcessing =
     phase === "orchestrating" || phase === "executing" || phase === "reviewing";
   const disabledReason = !input.trim()
-    ? "Enter a request to run the assistant system."
+    ? copy.emptyRequest
     : !canAfford("assistants-orchestrator-generation")
-      ? "Add credits to run the assistant system."
+      ? copy.addCredits
       : isProcessing
-        ? "The assistant system is currently processing."
+        ? copy.processingNotice
         : "";
 
   async function handleRun() {
@@ -142,7 +243,7 @@ export default function AssistantsClient() {
     }
 
     if (!spendCredits("assistants-orchestrator-generation")) {
-      setError("Insufficient credits for Assistants orchestration.");
+      setError(copy.insufficientCredits);
       addCreditsModal.showAddCredits();
       return;
     }
@@ -167,7 +268,7 @@ export default function AssistantsClient() {
       setError(
         caughtError instanceof Error
           ? caughtError.message
-          : "Assistant system failed.",
+          : copy.failure,
       );
     }
   }
@@ -180,10 +281,10 @@ export default function AssistantsClient() {
       <div className="mx-auto max-w-6xl">
         <div className="mb-12 max-w-3xl">
           <p className="text-sm font-medium uppercase tracking-[0.36em] text-slate-500">
-            Assistant System
+            {copy.eyebrow}
           </p>
           <h2 className="mt-4 text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-            Route one request through specialized EMOVEL execution modules.
+            {copy.headline}
           </h2>
         </div>
 
@@ -214,7 +315,7 @@ export default function AssistantsClient() {
                   {assistant.name.replace("EMOVEL ", "")}
                 </p>
                 <p className="mt-3 text-xs leading-6 text-slate-400">
-                  {assistant.functions[0]}
+                  {copy.assistantFunctions[id]}
                 </p>
               </div>
             );
@@ -226,20 +327,22 @@ export default function AssistantsClient() {
             htmlFor="assistant-request"
             className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500"
           >
-            Request
+            {copy.requestLabel}
           </label>
           <textarea
             id="assistant-request"
             value={input}
             onChange={(event) => setInput(event.target.value)}
             rows={5}
-            placeholder="Example: Create a premium product package for an EMOVEL template shop, including positioning, offer logic, social copy, and quality review."
+            placeholder={copy.placeholder}
             className="mt-4 w-full resize-none border border-white/[0.08] bg-black/35 px-4 py-4 text-sm leading-7 text-white outline-none placeholder:text-slate-600 focus:border-white/25"
           />
 
           <div className="mt-6 grid gap-5 lg:grid-cols-[1fr_auto] lg:items-center">
             <div className="space-y-4">
-              <div className="text-xs text-slate-500">{input.length} characters</div>
+              <div className="text-xs text-slate-500">
+                {input.length} {copy.characters}
+              </div>
               <CreditDisplay
                 balance={credits.balance}
                 action="assistants-orchestrator-generation"
@@ -257,8 +360,8 @@ export default function AssistantsClient() {
               className="inline-flex h-14 items-center justify-center rounded-full bg-white px-8 text-sm font-semibold uppercase tracking-[0.22em] text-black disabled:cursor-not-allowed disabled:bg-white/25 disabled:text-white/40"
             >
               {isProcessing
-                ? "Processing"
-                : `Run System (${costs["assistants-orchestrator-generation"].estimatedCreditCost} credits)`}
+                ? copy.processing
+                : `${copy.runSystem} (${costs["assistants-orchestrator-generation"].estimatedCreditCost} ${copy.credits})`}
             </button>
           </div>
 
@@ -278,7 +381,12 @@ export default function AssistantsClient() {
 
         {phase !== "idle" ? (
           <div className="mt-8 flex justify-center">
-            <PhaseBar current={phase} activeAssistant={activeAssistant} />
+            <PhaseBar
+              current={phase}
+              activeAssistant={activeAssistant}
+              activeAssistantSuffix={copy.activeAssistantSuffix}
+              phaseLabels={copy.phases}
+            />
           </div>
         ) : null}
 
@@ -290,7 +398,13 @@ export default function AssistantsClient() {
 
         {result ? (
           <div ref={resultRef} className="mt-10 space-y-5">
-            <Section title="Orchestrator Plan">
+            <Section
+              title={copy.orchestratorPlan}
+              copiedLabel={copy.copied}
+              copyLabel={copy.copy}
+              openLabel={copy.open}
+              closeLabel={copy.close}
+            >
               <div className="border border-white/[0.08] bg-black/25 p-4">
                 <p className="text-sm leading-7 text-slate-200">
                   {result.plan.taskSummary}
@@ -333,12 +447,16 @@ export default function AssistantsClient() {
                   key={response.assistantId}
                   title={response.assistantName}
                   copyText={response.output}
+                  copiedLabel={copy.copied}
+                  copyLabel={copy.copy}
+                  openLabel={copy.open}
+                  closeLabel={copy.close}
                 >
                   <p
                     className="text-[11px] font-medium uppercase tracking-[0.22em]"
                     style={{ color: assistant.color }}
                   >
-                    Task
+                    {copy.task}
                   </p>
                   <p className="text-sm leading-7 text-slate-400">{response.task}</p>
                   <div className="border border-white/[0.08] bg-black/25 p-4">
@@ -354,7 +472,13 @@ export default function AssistantsClient() {
               <MarketingOutputSystem input={input} result={result} />
             ) : null}
 
-            <Section title="Quality Review">
+            <Section
+              title={copy.qualityReview}
+              copiedLabel={copy.copied}
+              copyLabel={copy.copy}
+              openLabel={copy.open}
+              closeLabel={copy.close}
+            >
               <p className="whitespace-pre-wrap text-sm leading-7 text-slate-200">
                 {result.qualityCheck}
               </p>
