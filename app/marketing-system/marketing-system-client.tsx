@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
-import Link from "next/link";
 import {
   AddCreditsModal,
   CreditDisplay,
@@ -24,6 +23,7 @@ import {
   writeCampaigns,
   type MarketingSystemHandoff,
 } from "./storage";
+import type { FinalPackage } from "../assistants/types";
 import type {
   MarketingBackgroundMode,
   MarketingImageModel,
@@ -107,6 +107,41 @@ function VisualCard({
   );
 }
 
+function createDirectMarketingPackage(input: string): FinalPackage {
+  const summary = input.trim().replace(/\s+/g, " ");
+  const taskSummary =
+    summary.length > 180 ? `${summary.slice(0, 177)}...` : summary;
+
+  return {
+    plan: {
+      taskSummary: `Direct marketing system request for: ${taskSummary}`,
+      assignments: [
+        {
+          assistant: "marketing",
+          task: "Create premium commercial positioning, campaign structure, social copy, and visual prompt direction.",
+          order: 1,
+        },
+      ],
+    },
+    responses: [
+      {
+        assistantId: "marketing",
+        assistantName: "EMOVEL MARKETING",
+        task: "Direct Marketing System workspace request.",
+        output: [
+          "Commercial Messaging",
+          "Position the request as a controlled commercial asset.",
+          "Use premium, restrained language with a clear conversion path.",
+          `Source request: ${taskSummary}`,
+        ].join("\n"),
+      },
+    ],
+    qualityCheck:
+      "Direct Marketing System context. Review the campaign title, caption, CTA, and visual prompt before production.",
+    timestamp: new Date().toISOString(),
+  };
+}
+
 export default function MarketingSystemClient() {
   const copy = useMarketingSystemCopy();
   const pageCopy = copy.page;
@@ -114,6 +149,7 @@ export default function MarketingSystemClient() {
   const { credits, costs, canAfford, spendCredits } = useCredits();
   const addCreditsModal = useAddCreditsModal();
   const [handoff, setHandoff] = useState<MarketingSystemHandoff | null>(null);
+  const [directInput, setDirectInput] = useState("");
   const [marketingResult, setMarketingResult] = useState<MarketingResult | null>(null);
   const [imageModel, setImageModel] = useState<MarketingImageModel | null>(null);
   const [savedCampaigns, setSavedCampaigns] = useState<SavedMarketingCampaign[]>([]);
@@ -121,24 +157,37 @@ export default function MarketingSystemClient() {
   const [statusMessage, setStatusMessage] = useState(systemCopy.ready);
 
   const sourceKey = useMemo(
-    () => (handoff ? `${handoff.input}-${handoff.result.timestamp}` : "no-handoff"),
+    () => (handoff ? `${handoff.input}-${handoff.result.timestamp}` : "direct"),
     [handoff],
   );
+  const hasWorkspaceInput = Boolean(handoff || directInput.trim());
 
   useEffect(() => {
-    setHandoff(readMarketingHandoff());
-    setSavedCampaigns(readCampaigns());
+    const timer = window.setTimeout(() => {
+      setHandoff(readMarketingHandoff());
+      setSavedCampaigns(readCampaigns());
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
   }, []);
 
   useEffect(() => {
-    setMarketingResult(null);
-    setImageModel(null);
-    setSelectedVariant("A");
-    setStatusMessage(systemCopy.ready);
+    const timer = window.setTimeout(() => {
+      setMarketingResult(null);
+      setImageModel(null);
+      setSelectedVariant("A");
+      setStatusMessage(systemCopy.ready);
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
   }, [sourceKey, systemCopy.ready]);
 
   function generateSocialPack() {
-    if (!handoff) {
+    if (!handoff && !directInput.trim()) {
       return;
     }
 
@@ -148,7 +197,9 @@ export default function MarketingSystemClient() {
       return;
     }
 
-    const nextResult = createMarketingResult(handoff.input, handoff.result);
+    const sourceInput = handoff?.input || directInput;
+    const sourceResult = handoff?.result || createDirectMarketingPackage(directInput);
+    const nextResult = createMarketingResult(sourceInput, sourceResult);
 
     setMarketingResult(nextResult);
     setImageModel(createImageModel(nextResult, "Instagram/Facebook Post", "cinematic-dark"));
@@ -211,7 +262,8 @@ export default function MarketingSystemClient() {
   }
 
   return (
-    <section className="px-6 py-24 sm:py-28 lg:px-10">
+    <>
+      <section className="px-6 py-24 sm:py-28 lg:px-10">
       <div className="mx-auto max-w-6xl">
         <div className="mb-12 max-w-3xl">
           <p className="text-sm font-medium uppercase tracking-[0.36em] text-slate-500">
@@ -225,21 +277,8 @@ export default function MarketingSystemClient() {
           </p>
         </div>
 
-        {!handoff ? (
-          <div className="border border-white/[0.08] bg-white/[0.025] p-8">
-            <p className="max-w-2xl text-sm leading-7 text-slate-400">
-              {pageCopy.missingContext}
-            </p>
-            <Link
-              href="/assistants"
-              className="mt-8 inline-flex h-14 items-center justify-center rounded-full bg-white px-8 text-sm font-semibold uppercase tracking-[0.22em] text-black hover:bg-slate-200"
-            >
-              {pageCopy.backToAssistants}
-            </Link>
-          </div>
-        ) : (
-          <div className="border border-[#D4C08A]/20 bg-[#D4C08A]/[0.035] p-6 sm:p-8">
-            <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+        <div className="border border-[#D4C08A]/20 bg-[#D4C08A]/[0.035] p-6 sm:p-8">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
               <div className="max-w-2xl">
                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#D4C08A]/70">
                   {systemCopy.eyebrow}
@@ -250,6 +289,29 @@ export default function MarketingSystemClient() {
                 <p className="mt-4 text-sm leading-7 text-slate-400">
                   {systemCopy.description}
                 </p>
+                {handoff ? (
+                  <div className="mt-5 border border-white/[0.08] bg-black/25 p-4">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#D4C08A]/75">
+                      Assistant Context Loaded
+                    </p>
+                    <p className="mt-3 text-sm leading-7 text-slate-400">
+                      {handoff.input}
+                    </p>
+                  </div>
+                ) : (
+                  <label className="mt-5 block space-y-3">
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">
+                      Campaign Request
+                    </span>
+                    <textarea
+                      value={directInput}
+                      onChange={(event) => setDirectInput(event.target.value)}
+                      rows={5}
+                      placeholder="Describe the campaign asset, audience, offer, CTA, platform, and visual direction you want to produce..."
+                      className="w-full resize-none border border-white/[0.08] bg-black/35 px-5 py-4 text-sm leading-7 text-white outline-none placeholder:text-slate-600 focus:border-white/25"
+                    />
+                  </label>
+                )}
               </div>
 
               <div className="flex shrink-0 flex-col gap-3">
@@ -261,7 +323,10 @@ export default function MarketingSystemClient() {
                 <button
                   type="button"
                   onClick={generateSocialPack}
-                  disabled={!canAfford("marketing-social-pack-generation")}
+                  disabled={
+                    !hasWorkspaceInput ||
+                    !canAfford("marketing-social-pack-generation")
+                  }
                   className="inline-flex h-14 items-center justify-center rounded-full bg-white px-7 text-sm font-semibold uppercase tracking-[0.2em] text-black hover:bg-slate-200 disabled:cursor-not-allowed disabled:bg-white/25 disabled:text-white/40"
                 >
                   {systemCopy.generate} ({costs["marketing-social-pack-generation"].estimatedCreditCost} credits)
@@ -269,7 +334,7 @@ export default function MarketingSystemClient() {
               </div>
             </div>
 
-            {!canAfford("marketing-social-pack-generation") ? (
+          {!canAfford("marketing-social-pack-generation") ? (
               <div className="mt-6">
                 <InsufficientCredits
                   action="marketing-social-pack-generation"
@@ -278,7 +343,7 @@ export default function MarketingSystemClient() {
               </div>
             ) : null}
 
-            {marketingResult ? (
+          {marketingResult ? (
               <div className="mt-8 grid gap-5 xl:grid-cols-[1fr_0.82fr]">
                 <div className="space-y-5">
                   <div className="grid gap-4 md:grid-cols-2">
@@ -484,9 +549,9 @@ export default function MarketingSystemClient() {
               </div>
             )}
           </div>
-        )}
-      </div>
+        </div>
+      </section>
       <AddCreditsModal open={addCreditsModal.open} onClose={addCreditsModal.hideAddCredits} />
-    </section>
+    </>
   );
 }

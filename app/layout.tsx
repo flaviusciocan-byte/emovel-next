@@ -85,6 +85,7 @@ export default function RootLayout({
               <li><Link href="/ecosystem" className="text-slate-400 hover:text-white">Ecosystem</Link></li>
               <li><Link href="/builder" className="text-slate-400 hover:text-white">Builder</Link></li>
               <li><Link href="/assistants" className="text-slate-400 hover:text-white">Assistants</Link></li>
+              <li><Link href="/marketing-system" className="text-slate-400 hover:text-white">Marketing System</Link></li>
               <li><Link href="/prompt-engine" className="text-slate-400 hover:text-white">Prompt Engine</Link></li>
               <li><Link href="/docs" className="text-slate-400 hover:text-white">Docs</Link></li>
             </ul>
