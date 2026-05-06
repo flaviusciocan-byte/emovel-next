@@ -35,7 +35,7 @@ export default function Assistants() {
           </div>
 
           <a
-            href="#start"
+            href="#assistant-system"
             className="inline-flex h-14 items-center justify-center rounded-full border border-white/15 px-8 text-sm font-semibold uppercase tracking-[0.22em] text-white hover:border-white/40 hover:bg-white hover:text-black"
           >
             {translations.cta}
@@ -45,7 +45,7 @@ export default function Assistants() {
 
       <AssistantsClient />
 
-      <section id="start" className="px-6 py-28">
+      <section className="px-6 py-28">
         <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-10 border border-white/[0.1] bg-white/[0.025] p-8 sm:p-12 lg:flex-row lg:items-center">
           <div>
             <p className="text-sm font-medium uppercase tracking-[0.36em] text-slate-500">

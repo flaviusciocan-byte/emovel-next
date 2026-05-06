@@ -146,6 +146,11 @@ export default function BuilderClient() {
   const validation = useMemo(() => validateSpec(spec), [spec]);
   const outputPlan = useMemo(() => buildOutputPlan(spec), [spec]);
   const style = useMemo(() => resolveStyle(spec), [spec]);
+  const disabledReason = !systemBrief.trim()
+    ? "Enter a system brief to generate the Builder preview."
+    : !canAfford("builder-generation")
+      ? "Add credits to generate the Builder system."
+      : "";
   const manifestPreview = useMemo<ExportManifest>(
     () => ({
       generatedAt: "browser-export",
@@ -272,14 +277,19 @@ export default function BuilderClient() {
 
           <div className="flex flex-col justify-between gap-4">
             <CreditDisplay balance={credits.balance} action="builder-generation" compact />
-            <button
-              type="button"
-              onClick={generateSystem}
-              disabled={!systemBrief.trim() || !canAfford("builder-generation")}
-              className="inline-flex h-14 items-center justify-center rounded-full bg-white px-7 text-sm font-semibold uppercase tracking-[0.2em] text-black hover:bg-white/85 disabled:cursor-not-allowed disabled:bg-white/25 disabled:text-white/40"
-            >
-              Generate System ({costs["builder-generation"].estimatedCreditCost} credits)
-            </button>
+            <div>
+              <button
+                type="button"
+                onClick={generateSystem}
+                disabled={!systemBrief.trim() || !canAfford("builder-generation")}
+                className="inline-flex h-14 w-full items-center justify-center rounded-full bg-white px-7 text-sm font-semibold uppercase tracking-[0.2em] text-black hover:bg-white/85 disabled:cursor-not-allowed disabled:bg-white/25 disabled:text-white/40"
+              >
+                Generate System ({costs["builder-generation"].estimatedCreditCost} credits)
+              </button>
+              {disabledReason ? (
+                <p className="mt-3 text-xs leading-6 text-slate-500">{disabledReason}</p>
+              ) : null}
+            </div>
           </div>
         </div>
       </div>
@@ -323,19 +333,17 @@ export default function BuilderClient() {
         </button>
 
         {advancedOpen ? (
-          <div className="grid gap-5 border-t border-white/10 p-6 xl:grid-cols-[1fr_0.9fr]">
+          <div className="min-w-0 space-y-5 overflow-hidden border-t border-white/10 p-4 sm:p-6">
             <RawSpecPanel spec={spec} onUpdateSpecField={updateSpecField} />
-            <div className="space-y-5">
-              <ValidationPanel validation={validation} />
-              <OutputPlanPanel outputPath={outputPlan.outputPath} outputPlan={outputPlan} />
-              <ManifestPanel
-                manifestStatus={manifestStatus}
-                manifestPreview={manifestPreview}
-                canExport={hasGenerated}
-                onCopy={copyManifest}
-                onDownload={downloadManifest}
-              />
-            </div>
+            <ValidationPanel validation={validation} />
+            <OutputPlanPanel outputPath={outputPlan.outputPath} outputPlan={outputPlan} />
+            <ManifestPanel
+              manifestStatus={manifestStatus}
+              manifestPreview={manifestPreview}
+              canExport={hasGenerated}
+              onCopy={copyManifest}
+              onDownload={downloadManifest}
+            />
           </div>
         ) : null}
       </div>
@@ -357,7 +365,7 @@ function SectionsPanel({
   onUpdateSection: (index: number, field: keyof BuilderSection, value: string) => void;
 }) {
   return (
-    <div className="border border-white/10 bg-white/[0.035] p-6">
+    <div className="min-w-0 overflow-hidden border border-white/10 bg-white/[0.035] p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className={labelClass()}>Sections</p>
@@ -374,8 +382,11 @@ function SectionsPanel({
 
       <div className="mt-6 space-y-4">
         {spec.sections.map((section, index) => (
-          <div key={`${section.id}-${index}`} className="border border-white/10 bg-black/25 p-4">
-            <div className="grid gap-3 md:grid-cols-[0.9fr_0.8fr_1.3fr]">
+          <div
+            key={`${section.id}-${index}`}
+            className="min-w-0 overflow-hidden border border-white/10 bg-black/25 p-4"
+          >
+            <div className="grid min-w-0 gap-3 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,0.8fr)_minmax(0,1.3fr)]">
               <label className="space-y-2">
                 <span className={labelClass()}>ID</span>
                 <input
@@ -439,7 +450,7 @@ function PreviewPanel({
   manifest: ExportManifest;
 }) {
   return (
-    <div className="border border-white/10 bg-white/[0.035] p-6">
+    <div className="min-w-0 overflow-hidden border border-white/10 bg-white/[0.035] p-6">
       <div className="flex items-center justify-between gap-4">
         <div>
           <p className={labelClass()}>Preview</p>
@@ -468,10 +479,10 @@ function RawSpecPanel({
   ) => void;
 }) {
   return (
-    <div className="border border-white/10 bg-black/25 p-6">
+    <div className="min-w-0 overflow-hidden border border-white/10 bg-black/25 p-5 sm:p-6">
       <p className={labelClass()}>Raw Spec</p>
       <h3 className="mt-3 text-xl font-semibold text-white">Product system input</h3>
-      <div className="mt-6 grid gap-4 md:grid-cols-2">
+      <div className="mt-6 grid min-w-0 gap-4 lg:grid-cols-2">
         <label className="space-y-2">
           <span className={labelClass()}>Template Name</span>
           <input
@@ -549,7 +560,7 @@ function RawSpecPanel({
 
 function ValidationPanel({ validation }: { validation: ReturnType<typeof validateSpec> }) {
   return (
-    <div className="border border-white/10 bg-black/25 p-6">
+    <div className="min-w-0 overflow-hidden border border-white/10 bg-black/25 p-5 sm:p-6">
       <p className={labelClass()}>Validation</p>
       <h3 className="mt-3 text-xl font-semibold text-white">
         {validation.isReady ? "Spec ready for planning." : "Spec needs completion."}
@@ -578,10 +589,10 @@ function OutputPlanPanel({
   outputPlan: ReturnType<typeof buildOutputPlan>;
 }) {
   return (
-    <div className="border border-white/10 bg-black/25 p-6">
+    <div className="min-w-0 overflow-hidden border border-white/10 bg-black/25 p-5 sm:p-6">
       <p className={labelClass()}>Output Plan</p>
       <h3 className="mt-3 text-xl font-semibold text-white">{outputPath}</h3>
-      <div className="mt-6 grid gap-4 md:grid-cols-2">
+      <div className="mt-6 grid min-w-0 gap-4 lg:grid-cols-2">
         <PlanList title="Folders" items={outputPlan.folders} />
         <PlanList title="Files" items={outputPlan.files} />
         <PlanList title="Components" items={outputPlan.components} />
@@ -605,7 +616,7 @@ function ManifestPanel({
   onDownload: () => void;
 }) {
   return (
-    <div className="border border-white/10 bg-black/25 p-6">
+    <div className="min-w-0 overflow-hidden border border-white/10 bg-black/25 p-5 sm:p-6">
       <p className={labelClass()}>Export Manifest</p>
       <h3 className="mt-3 text-xl font-semibold text-white">Browser-only handoff</h3>
       <p className="mt-3 text-sm leading-7 text-white/55">
@@ -631,7 +642,7 @@ function ManifestPanel({
         </button>
       </div>
       <p className="mt-4 text-xs text-white/45">{manifestStatus}</p>
-      <pre className="mt-5 max-h-80 overflow-auto bg-black/35 p-4 text-xs leading-6 text-white/55">
+      <pre className="mt-5 max-h-80 max-w-full overflow-auto bg-black/35 p-4 text-xs leading-6 text-white/55">
         {JSON.stringify(manifestPreview, null, 2)}
       </pre>
     </div>
@@ -640,7 +651,7 @@ function ManifestPanel({
 
 function PlanList({ title, items }: { title: string; items: string[] }) {
   return (
-    <div className="border border-white/10 bg-black/25 p-4">
+    <div className="min-w-0 overflow-hidden border border-white/10 bg-black/25 p-4">
       <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-white/40">
         {title}
       </p>

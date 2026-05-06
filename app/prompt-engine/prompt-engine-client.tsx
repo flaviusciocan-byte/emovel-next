@@ -147,6 +147,13 @@ export default function PromptEngineClient() {
 
   const isProcessing =
     phase === "structuring" || phase === "generating" || phase === "verifying";
+  const disabledReason = !rawIdea.trim()
+    ? "Enter a raw idea to generate a prompt package."
+    : !canAfford("prompt-engine-generation")
+      ? "Add credits to generate a prompt package."
+      : isProcessing
+        ? "Prompt Engine is currently processing."
+        : "";
 
   async function handleGenerate() {
     if (!rawIdea.trim() || isProcessing) {
@@ -182,7 +189,10 @@ export default function PromptEngineClient() {
   }
 
   return (
-    <section id="start" className="border-b border-white/[0.07] px-6 py-24 sm:py-28">
+    <section
+      id="prompt-engine-system"
+      className="scroll-mt-32 border-b border-white/[0.07] px-6 py-24 sm:py-28"
+    >
       <div className="mx-auto max-w-5xl">
         <div className="mb-10 max-w-3xl">
           <p className="text-sm font-medium uppercase tracking-[0.36em] text-slate-500">
@@ -226,6 +236,10 @@ export default function PromptEngineClient() {
                 : `Generate Package (${costs["prompt-engine-generation"].estimatedCreditCost} credits)`}
             </button>
           </div>
+
+          {disabledReason ? (
+            <p className="mt-3 text-xs leading-6 text-slate-500">{disabledReason}</p>
+          ) : null}
 
           {!canAfford("prompt-engine-generation") ? (
             <div className="mt-5">

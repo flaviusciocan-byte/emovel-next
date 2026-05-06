@@ -128,6 +128,13 @@ export default function AssistantsClient() {
 
   const isProcessing =
     phase === "orchestrating" || phase === "executing" || phase === "reviewing";
+  const disabledReason = !input.trim()
+    ? "Enter a request to run the assistant system."
+    : !canAfford("assistants-orchestrator-generation")
+      ? "Add credits to run the assistant system."
+      : isProcessing
+        ? "The assistant system is currently processing."
+        : "";
 
   async function handleRun() {
     if (!input.trim() || isProcessing) {
@@ -166,7 +173,10 @@ export default function AssistantsClient() {
   }
 
   return (
-    <section id="start" className="border-b border-white/[0.07] px-6 py-24 sm:py-28">
+    <section
+      id="assistant-system"
+      className="scroll-mt-32 border-b border-white/[0.07] px-6 py-24 sm:py-28"
+    >
       <div className="mx-auto max-w-6xl">
         <div className="mb-12 max-w-3xl">
           <p className="text-sm font-medium uppercase tracking-[0.36em] text-slate-500">
@@ -251,6 +261,10 @@ export default function AssistantsClient() {
                 : `Run System (${costs["assistants-orchestrator-generation"].estimatedCreditCost} credits)`}
             </button>
           </div>
+
+          {disabledReason ? (
+            <p className="mt-3 text-xs leading-6 text-slate-500">{disabledReason}</p>
+          ) : null}
 
           {!canAfford("assistants-orchestrator-generation") ? (
             <div className="mt-5">
