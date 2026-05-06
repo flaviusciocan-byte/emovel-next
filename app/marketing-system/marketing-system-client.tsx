@@ -1,20 +1,18 @@
 "use client";
 
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
-import {
-  AddCreditsModal,
-  CreditDisplay,
-  InsufficientCredits,
-  useAddCreditsModal,
-} from "../credits/credit-ui";
 import { useCredits } from "../credits/credit-store";
-import { marketingSystemTranslations } from "../translations/marketing-system";
+import {
+  marketingSystemTranslations,
+  type MarketingSystemTranslation,
+} from "../translations/marketing-system";
 import { detectLanguage } from "../utils/language";
 import {
   backgroundLabels,
   backgroundModes,
   createImageModel,
   createMarketingResult,
+  platformLabels,
   platformFormats,
 } from "./output-model";
 import {
@@ -114,11 +112,11 @@ function createDirectMarketingPackage(input: string): FinalPackage {
 
   return {
     plan: {
-      taskSummary: `Direct marketing system request for: ${taskSummary}`,
+      taskSummary: `Cerere directa pentru Marketing System: ${taskSummary}`,
       assignments: [
         {
           assistant: "marketing",
-          task: "Create premium commercial positioning, campaign structure, social copy, and visual prompt direction.",
+          task: "Construieste pozitionare comerciala premium, structura de campanie, copy social si directie de prompt vizual.",
           order: 1,
         },
       ],
@@ -127,27 +125,38 @@ function createDirectMarketingPackage(input: string): FinalPackage {
       {
         assistantId: "marketing",
         assistantName: "EMOVEL MARKETING",
-        task: "Direct Marketing System workspace request.",
+        task: "Cerere directa in workspace-ul Marketing System.",
         output: [
-          "Commercial Messaging",
-          "Position the request as a controlled commercial asset.",
-          "Use premium, restrained language with a clear conversion path.",
-          `Source request: ${taskSummary}`,
+          "Mesaj comercial",
+          "Pozitioneaza cererea ca asset comercial controlat.",
+          "Foloseste limbaj premium, restrans si o cale clara de conversie.",
+          `Cerere sursa: ${taskSummary}`,
         ].join("\n"),
       },
     ],
     qualityCheck:
-      "Direct Marketing System context. Review the campaign title, caption, CTA, and visual prompt before production.",
+      "Context direct Marketing System. Revizuieste titlul campaniei, captionul, CTA-ul si promptul vizual inainte de productie.",
     timestamp: new Date().toISOString(),
   };
+}
+
+function statusLabel(status: string, copy: MarketingSystemTranslation["system"]) {
+  if (status === "draft") {
+    return copy.draftStatus;
+  }
+
+  if (status === "ready") {
+    return copy.readyStatus;
+  }
+
+  return status;
 }
 
 export default function MarketingSystemClient() {
   const copy = useMarketingSystemCopy();
   const pageCopy = copy.page;
   const systemCopy = copy.system;
-  const { credits, costs, canAfford, spendCredits } = useCredits();
-  const addCreditsModal = useAddCreditsModal();
+  const { credits, costs, canAfford, spendCredits, loaded } = useCredits();
   const [handoff, setHandoff] = useState<MarketingSystemHandoff | null>(null);
   const [directInput, setDirectInput] = useState("");
   const [marketingResult, setMarketingResult] = useState<MarketingResult | null>(null);
@@ -155,12 +164,17 @@ export default function MarketingSystemClient() {
   const [savedCampaigns, setSavedCampaigns] = useState<SavedMarketingCampaign[]>([]);
   const [selectedVariant, setSelectedVariant] = useState<"A" | "B">("A");
   const [statusMessage, setStatusMessage] = useState(systemCopy.ready);
+  const [creditModalOpen, setCreditModalOpen] = useState(false);
 
   const sourceKey = useMemo(
-    () => (handoff ? `${handoff.input}-${handoff.result.timestamp}` : "direct"),
-    [handoff],
+    () => (handoff ? `${handoff.input}-${handoff.result.timestamp}` : directInput.trim()),
+    [directInput, handoff],
   );
   const hasWorkspaceInput = Boolean(handoff || directInput.trim());
+  const canGenerate =
+    loaded && hasWorkspaceInput && canAfford("marketing-social-pack-generation");
+  const showCreditGate =
+    loaded && hasWorkspaceInput && !canAfford("marketing-social-pack-generation");
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -192,8 +206,9 @@ export default function MarketingSystemClient() {
     }
 
     if (!spendCredits("marketing-social-pack-generation")) {
+      setMarketingResult(null);
+      setImageModel(null);
       setStatusMessage(systemCopy.insufficientCredits);
-      addCreditsModal.showAddCredits();
       return;
     }
 
@@ -292,7 +307,7 @@ export default function MarketingSystemClient() {
                 {handoff ? (
                   <div className="mt-5 border border-white/[0.08] bg-black/25 p-4">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#D4C08A]/75">
-                      Assistant Context Loaded
+                      {systemCopy.contextLoaded}
                     </p>
                     <p className="mt-3 text-sm leading-7 text-slate-400">
                       {handoff.input}
@@ -301,13 +316,13 @@ export default function MarketingSystemClient() {
                 ) : (
                   <label className="mt-5 block space-y-3">
                     <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">
-                      Campaign Request
+                      {systemCopy.campaignRequest}
                     </span>
                     <textarea
                       value={directInput}
                       onChange={(event) => setDirectInput(event.target.value)}
                       rows={5}
-                      placeholder="Describe the campaign asset, audience, offer, CTA, platform, and visual direction you want to produce..."
+                      placeholder={systemCopy.campaignRequestPlaceholder}
                       className="w-full resize-none border border-white/[0.08] bg-black/35 px-5 py-4 text-sm leading-7 text-white outline-none placeholder:text-slate-600 focus:border-white/25"
                     />
                   </label>
@@ -315,31 +330,48 @@ export default function MarketingSystemClient() {
               </div>
 
               <div className="flex shrink-0 flex-col gap-3">
-                <CreditDisplay
-                  balance={credits.balance}
-                  action="marketing-social-pack-generation"
-                  compact
-                />
+                <div className="border border-white/[0.08] bg-black/25 px-4 py-3">
+                  <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-slate-500">
+                    {systemCopy.creditBalance}
+                  </p>
+                  <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
+                    <p className="text-2xl font-semibold text-white">{credits.balance}</p>
+                    <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
+                      {systemCopy.costLabel}: {costs["marketing-social-pack-generation"].estimatedCreditCost}
+                    </p>
+                  </div>
+                  <p className="mt-3 border-t border-white/[0.08] pt-3 text-xs leading-5 text-slate-500">
+                    {systemCopy.modelRoute}: {costs["marketing-social-pack-generation"].modelTier}
+                  </p>
+                </div>
                 <button
                   type="button"
                   onClick={generateSocialPack}
-                  disabled={
-                    !hasWorkspaceInput ||
-                    !canAfford("marketing-social-pack-generation")
-                  }
+                  disabled={!canGenerate}
                   className="inline-flex h-14 items-center justify-center rounded-full bg-white px-7 text-sm font-semibold uppercase tracking-[0.2em] text-black hover:bg-slate-200 disabled:cursor-not-allowed disabled:bg-white/25 disabled:text-white/40"
                 >
-                  {systemCopy.generate} ({costs["marketing-social-pack-generation"].estimatedCreditCost} credits)
+                  {systemCopy.generate} ({costs["marketing-social-pack-generation"].estimatedCreditCost} credite)
                 </button>
               </div>
             </div>
 
-          {!canAfford("marketing-social-pack-generation") ? (
-              <div className="mt-6">
-                <InsufficientCredits
-                  action="marketing-social-pack-generation"
-                  onAddCredits={addCreditsModal.showAddCredits}
-                />
+          {showCreditGate ? (
+              <div className="mt-6 border border-[#D4C08A]/35 bg-[#D4C08A]/10 p-5 text-sm leading-6 text-[#F3E3B3]">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="font-semibold text-white">{systemCopy.insufficientCredits}</p>
+                    <p className="mt-1 text-[#F3E3B3]/75">
+                      {systemCopy.costLabel}: {costs["marketing-social-pack-generation"].estimatedCreditCost} credite.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setCreditModalOpen(true)}
+                    className="w-fit bg-white px-5 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-black hover:bg-slate-200"
+                  >
+                    {systemCopy.addCredits}
+                  </button>
+                </div>
               </div>
             ) : null}
 
@@ -385,7 +417,7 @@ export default function MarketingSystemClient() {
                           </h3>
                         </div>
                         <span className="w-fit border border-[#D4C08A]/25 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#D4C08A]/75">
-                          {imageModel.status}
+                          {statusLabel(imageModel.status, systemCopy)}
                         </span>
                       </div>
 
@@ -428,7 +460,7 @@ export default function MarketingSystemClient() {
                           >
                             {platformFormats.map((format) => (
                               <option key={format} value={format}>
-                                {format}
+                                {platformLabels[format]}
                               </option>
                             ))}
                           </select>
@@ -438,7 +470,7 @@ export default function MarketingSystemClient() {
                       <div className="mt-5 grid gap-3 text-sm text-slate-400 md:grid-cols-3">
                         <p>{systemCopy.style}: {imageModel.stylePreset}</p>
                         <p>{systemCopy.size}: {imageModel.size}</p>
-                        <p>{systemCopy.status}: {imageModel.status}</p>
+                        <p>{systemCopy.status}: {statusLabel(imageModel.status, systemCopy)}</p>
                       </div>
 
                       <div className="mt-5 border border-white/[0.08] bg-white/[0.025] p-4">
@@ -458,6 +490,9 @@ export default function MarketingSystemClient() {
                         >
                           {systemCopy.generateImage}
                         </button>
+                        <span className="self-center text-xs leading-5 text-slate-500">
+                          {systemCopy.promptPrepOnly}
+                        </span>
                         <button
                           type="button"
                           onClick={copyVisualPrompt}
@@ -472,7 +507,7 @@ export default function MarketingSystemClient() {
                   <div className="flex flex-wrap gap-3">
                     <button
                       type="button"
-                      disabled={!imageModel?.imageUrl}
+                      disabled
                       className="cursor-not-allowed border border-white/10 px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-white/35"
                     >
                       {systemCopy.downloadImage}
@@ -493,8 +528,8 @@ export default function MarketingSystemClient() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => saveCampaign("scheduled", "Local reminder only. No social publishing is connected.")}
-                      className="bg-white px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-black hover:bg-slate-200"
+                      onClick={() => saveCampaign("draft", systemCopy.localReminderNote)}
+                      className="border border-[#D4C08A]/30 bg-[#D4C08A]/10 px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-[#F3E3B3] hover:border-[#D4C08A]/60"
                     >
                       {systemCopy.publishLater}
                     </button>
@@ -504,7 +539,7 @@ export default function MarketingSystemClient() {
                 <div className="space-y-5">
                   <div className="border border-white/[0.08] bg-black/30 p-5">
                     <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-slate-500">
-                      {systemCopy.campaign}
+                      {systemCopy.currentPreview}
                     </p>
                     <h3 className="mt-3 text-xl font-semibold text-white">
                       {marketingResult.campaignTitle}
@@ -516,31 +551,11 @@ export default function MarketingSystemClient() {
                     <div className="mt-5 grid gap-3 text-sm text-slate-400">
                       <p>{systemCopy.platform}: {marketingResult.platform}</p>
                       <p>{systemCopy.format}: {marketingResult.format}</p>
-                      <p>{systemCopy.status}: {marketingResult.status}</p>
+                      <p>{systemCopy.status}: {statusLabel(marketingResult.status, systemCopy)}</p>
                       <p>{systemCopy.cta}: {marketingResult.cta}</p>
                     </div>
                   </div>
 
-                  <div className="border border-white/[0.08] bg-black/30 p-5">
-                    <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-slate-500">
-                      {systemCopy.localDrafts}
-                    </p>
-                    <p className="mt-3 text-sm leading-7 text-slate-400">{statusMessage}</p>
-                    <div className="mt-4 space-y-3">
-                      {savedCampaigns.length === 0 ? (
-                        <p className="text-sm text-slate-500">{systemCopy.noDrafts}</p>
-                      ) : (
-                        savedCampaigns.slice(0, 4).map((campaign) => (
-                          <div key={campaign.id} className="border border-white/[0.08] p-3">
-                            <p className="text-sm font-medium text-white">{campaign.campaignTitle}</p>
-                            <p className="mt-1 text-xs uppercase tracking-[0.16em] text-slate-500">
-                              {campaign.status} / {new Date(campaign.savedAt).toLocaleDateString()}
-                            </p>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
                 </div>
               </div>
             ) : (
@@ -548,10 +563,57 @@ export default function MarketingSystemClient() {
                 {systemCopy.emptyState}
               </div>
             )}
+
+            <div className="mt-8 border border-white/[0.08] bg-black/30 p-5">
+              <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-slate-500">
+                {systemCopy.localDrafts}
+              </p>
+              <p className="mt-3 text-sm leading-7 text-slate-400">{statusMessage}</p>
+              <div className="mt-4 space-y-3">
+                {savedCampaigns.length === 0 ? (
+                  <p className="text-sm text-slate-500">{systemCopy.noDrafts}</p>
+                ) : (
+                  savedCampaigns.slice(0, 4).map((campaign) => (
+                    <div key={campaign.id} className="border border-white/[0.08] p-3">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#D4C08A]/70">
+                        {systemCopy.savedDraft}
+                      </p>
+                      <p className="mt-2 text-sm font-medium text-white">{campaign.campaignTitle}</p>
+                      <p className="mt-1 text-xs uppercase tracking-[0.16em] text-slate-500">
+                        {statusLabel(campaign.status, systemCopy)} / {new Date(campaign.savedAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </section>
-      <AddCreditsModal open={addCreditsModal.open} onClose={addCreditsModal.hideAddCredits} />
+      {creditModalOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-6">
+          <div className="w-full max-w-lg border border-white/[0.1] bg-[#080808] p-6 shadow-2xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
+              {systemCopy.addCredits}
+            </p>
+            <h3 className="mt-4 text-2xl font-semibold tracking-tight text-white">
+              {systemCopy.addCreditsTitle}
+            </h3>
+            <p className="mt-4 text-sm leading-7 text-slate-400">
+              {systemCopy.addCreditsDescription}
+            </p>
+            <div className="mt-7 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setCreditModalOpen(false)}
+                className="rounded-full border border-white/15 px-5 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-white hover:border-white/35"
+              >
+                {systemCopy.close}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </>
   );
 }

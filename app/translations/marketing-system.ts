@@ -10,6 +10,9 @@ export type MarketingSystemTranslation = {
     eyebrow: string;
     headline: string;
     description: string;
+    contextLoaded: string;
+    campaignRequest: string;
+    campaignRequestPlaceholder: string;
     generate: string;
     ready: string;
     insufficientCredits: string;
@@ -33,107 +36,96 @@ export type MarketingSystemTranslation = {
     saveCampaign: string;
     publishLater: string;
     campaign: string;
+    currentPreview: string;
+    savedDraft: string;
     platform: string;
     cta: string;
     localDrafts: string;
     noDrafts: string;
     emptyState: string;
+    creditBalance: string;
+    costLabel: string;
+    modelRoute: string;
+    addCredits: string;
+    addCreditsTitle: string;
+    addCreditsDescription: string;
+    close: string;
+    unavailableSoon: string;
+    promptPrepOnly: string;
+    localReminderNote: string;
+    draftStatus: string;
+    readyStatus: string;
   };
 };
 
+const romanianMarketingSystem: MarketingSystemTranslation = {
+  page: {
+    eyebrow: "Marketing System",
+    headline: "Productie de output comercial pentru campanii EMOVEL.",
+    subheadline:
+      "Transforma o cerere de campanie intr-un Social Pack local: pozitionare, caption, CTA, hashtaguri, prompt vizual si drafturi salvate in browser.",
+    missingContext:
+      "Nu exista inca un handoff din Assistants. Pagina poate rula direct dintr-o cerere de campanie.",
+    backToAssistants: "Deschide Assistants",
+  },
+  system: {
+    eyebrow: "Sistem de executie marketing",
+    headline: "Genereaza un Social Pack comercial din cererea ta.",
+    description:
+      "V1 pregateste output local pentru campanii premium: mesaj comercial, structura vizuala, prompt pentru imagine si drafturi locale. Nu exista publicare live, imagine generata automat sau integrare cu platforme externe.",
+    contextLoaded: "Context incarcat din Assistants",
+    campaignRequest: "Cerere de campanie",
+    campaignRequestPlaceholder:
+      "Descrie assetul de campanie, publicul, oferta, CTA-ul, platforma si directia vizuala pe care vrei sa le produci...",
+    generate: "Genereaza Social Pack",
+    ready: "Pregatit pentru generarea unui Social Pack local.",
+    insufficientCredits:
+      "Credite insuficiente. Nu a fost generat niciun output nou.",
+    generated: "Social Pack generat ca previzualizare de draft local.",
+    captionCopied: "Captionul a fost copiat in clipboard.",
+    promptCopied: "Promptul vizual a fost copiat in clipboard.",
+    saved: "Campanie salvata local ca draft.",
+    scheduled: "Reminder local salvat. Nu exista publicare automata.",
+    visualPrep: "Pregatire prompt vizual",
+    visualPrepTitle: "Model de cerere pentru imagine",
+    backgroundMode: "Mod fundal",
+    format: "Format",
+    style: "Stil",
+    size: "Dimensiune",
+    status: "Status",
+    visualPrompt: "Prompt vizual",
+    generateImage: "In curand: generare imagine",
+    copyPrompt: "Copiaza promptul",
+    downloadImage: "In curand: descarcare imagine",
+    copyCaption: "Copiaza captionul",
+    saveCampaign: "Salveaza draft",
+    publishLater: "Salveaza reminder local",
+    campaign: "Campanie",
+    currentPreview: "Previzualizare draft curent",
+    savedDraft: "Draft local salvat",
+    platform: "Platforma",
+    cta: "CTA",
+    localDrafts: "Drafturi locale",
+    noDrafts: "Nu exista campanii salvate local.",
+    emptyState:
+      "Introdu o cerere clara si genereaza un Social Pack. Outputul ramane local pana il salvezi ca draft.",
+    creditBalance: "Credite disponibile",
+    costLabel: "Cost",
+    modelRoute: "Ruta model",
+    addCredits: "Adauga credite",
+    addCreditsTitle: "Credite in curand",
+    addCreditsDescription:
+      "Platile nu sunt conectate in aceasta versiune. In productie, acest pas va trimite catre checkout securizat si ledger server-side.",
+    close: "Inchide",
+    unavailableSoon: "In curand",
+    promptPrepOnly: "Pregatire prompt, fara generatie automata.",
+    localReminderNote: "Reminder local. Nu exista publicare automata sau integrare social media.",
+    draftStatus: "draft local",
+    readyStatus: "pregatit",
+  },
+};
+
 export const marketingSystemTranslations: Record<string, MarketingSystemTranslation> = {
-  en: {
-    page: {
-      eyebrow: "Marketing System",
-      headline: "Commercial output production for EMOVEL campaigns.",
-      subheadline:
-        "Generate a Social Pack from assistant context, prepare visual prompts, and keep local campaign drafts in one focused execution surface.",
-      missingContext:
-        "No assistant handoff is available yet. Run a marketing request through the assistants system first.",
-      backToAssistants: "Open Assistants",
-    },
-    system: {
-      eyebrow: "Marketing Output System",
-      headline: "Generate a commercial Social Pack from the Marketing module.",
-      description:
-        "V1 creates two local visual variants, caption, hashtags, CTA, campaign metadata, and draft actions. No live publishing or platform integrations are connected.",
-      generate: "Generate Social Pack",
-      ready: "Ready to generate a local Social Pack.",
-      insufficientCredits:
-        "Insufficient credits for Marketing Social Pack generation.",
-      generated: "Social Pack generated as a local draft.",
-      captionCopied: "Caption copied to clipboard.",
-      promptCopied: "Visual prompt copied to clipboard.",
-      saved: "Campaign saved locally.",
-      scheduled: "Publish Later saved as a local reminder only.",
-      visualPrep: "Image Generation Prep",
-      visualPrepTitle: "Professional image request model",
-      backgroundMode: "Background Mode",
-      format: "Format",
-      style: "Style",
-      size: "Size",
-      status: "Status",
-      visualPrompt: "Visual Prompt",
-      generateImage: "Generate Professional Image",
-      copyPrompt: "Copy Prompt",
-      downloadImage: "Download Image",
-      copyCaption: "Copy Caption",
-      saveCampaign: "Save Campaign",
-      publishLater: "Publish Later",
-      campaign: "Campaign",
-      platform: "Platform",
-      cta: "CTA",
-      localDrafts: "Local Drafts",
-      noDrafts: "No saved campaigns yet.",
-      emptyState:
-        "Generate the Social Pack after reviewing the assistant output. Saved campaigns remain local to this browser.",
-    },
-  },
-  ro: {
-    page: {
-      eyebrow: "Sistem Marketing",
-      headline: "Producție de output comercial pentru campanii EMOVEL.",
-      subheadline:
-        "Generează un Social Pack din contextul asistenților, pregătește prompturi vizuale și păstrează drafturile locale într-o suprafață de execuție separată.",
-      missingContext:
-        "Nu există încă un handoff din assistants. Rulează mai întâi o cerere de marketing prin sistemul de asistenți.",
-      backToAssistants: "Deschide Assistants",
-    },
-    system: {
-      eyebrow: "Sistem de output marketing",
-      headline: "Generează un Social Pack comercial din modulul Marketing.",
-      description:
-        "V1 creează două variante vizuale locale, caption, hashtaguri, CTA, metadate de campanie și acțiuni de draft. Publicarea live și integrările de platformă nu sunt conectate.",
-      generate: "Generează Social Pack",
-      ready: "Pregătit pentru generarea unui Social Pack local.",
-      insufficientCredits:
-        "Credite insuficiente pentru generarea Social Pack-ului Marketing.",
-      generated: "Social Pack generat ca draft local.",
-      captionCopied: "Caption copiat în clipboard.",
-      promptCopied: "Promptul vizual a fost copiat în clipboard.",
-      saved: "Campanie salvată local.",
-      scheduled: "Publish Later salvat doar ca reminder local.",
-      visualPrep: "Pregătire imagine",
-      visualPrepTitle: "Model profesional pentru cererea de imagine",
-      backgroundMode: "Mod fundal",
-      format: "Format",
-      style: "Stil",
-      size: "Dimensiune",
-      status: "Status",
-      visualPrompt: "Prompt vizual",
-      generateImage: "Generează imagine profesională",
-      copyPrompt: "Copiază promptul",
-      downloadImage: "Descarcă imaginea",
-      copyCaption: "Copiază captionul",
-      saveCampaign: "Salvează campania",
-      publishLater: "Publică mai târziu",
-      campaign: "Campanie",
-      platform: "Platformă",
-      cta: "CTA",
-      localDrafts: "Drafturi locale",
-      noDrafts: "Nu există campanii salvate.",
-      emptyState:
-        "Generează Social Pack-ul după revizuirea outputului. Campaniile salvate rămân locale în acest browser.",
-    },
-  },
+  en: romanianMarketingSystem,
+  ro: romanianMarketingSystem,
 };
