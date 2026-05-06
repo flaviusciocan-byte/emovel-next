@@ -1,17 +1,21 @@
 "use client";
 
 import { useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import Link from "next/link";
 import {
   AddCreditsModal,
   CreditDisplay,
   InsufficientCredits,
   useAddCreditsModal,
 } from "../credits/credit-ui";
-import { assistantsTranslations } from "../translations/assistants";
+import {
+  assistantsTranslations,
+  type AssistantsTranslation,
+} from "../translations/assistants";
 import { detectLanguage } from "../utils/language";
 import { useCredits } from "../credits/credit-store";
 import { ASSISTANT_ORDER, ASSISTANTS } from "./profiles";
-import MarketingOutputSystem from "./marketing-output-system";
+import { writeMarketingHandoff } from "../marketing-system/storage";
 import { runAssistantSystem } from "./orchestrator";
 import type { AssistantId, FinalPackage, SystemPhase } from "./types";
 
@@ -130,7 +134,8 @@ function PhaseBar({
     { key: "complete", label: phaseLabels.complete },
   ];
   const currentIndex = phases.findIndex((phase) => phase.key === current);
-  const activeProfile = activeAssistant ? ASSISTANTS[activeAssistant] : null;
+  const activeProfile =
+    activeAssistant && activeAssistant !== "marketing" ? ASSISTANTS[activeAssistant] : null;
 
   return (
     <div className="flex flex-col gap-3">
@@ -161,6 +166,45 @@ function PhaseBar({
           {activeAssistantSuffix}
         </p>
       ) : null}
+    </div>
+  );
+}
+
+function MarketingSystemHandoff({
+  input,
+  result,
+  copy,
+}: {
+  input: string;
+  result: FinalPackage;
+  copy: AssistantsTranslation["client"];
+}) {
+  function handleHandoff() {
+    writeMarketingHandoff(input, result);
+  }
+
+  return (
+    <div className="border border-[#D4C08A]/20 bg-[#D4C08A]/[0.035] p-6 sm:p-8">
+      <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
+        <div className="max-w-2xl">
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#D4C08A]/70">
+            {copy.marketingHandoffEyebrow}
+          </p>
+          <h3 className="mt-4 text-3xl font-semibold tracking-tight text-white">
+            {copy.marketingHandoffHeadline}
+          </h3>
+          <p className="mt-4 text-sm leading-7 text-slate-400">
+            {copy.marketingHandoffDescription}
+          </p>
+        </div>
+        <Link
+          href="/marketing-system"
+          onClick={handleHandoff}
+          className="inline-flex h-14 shrink-0 items-center justify-center rounded-full bg-white px-7 text-sm font-semibold uppercase tracking-[0.2em] text-black hover:bg-slate-200"
+        >
+          {copy.marketingHandoffCta}
+        </Link>
+      </div>
     </div>
   );
 }
@@ -288,7 +332,7 @@ export default function AssistantsClient() {
           </h2>
         </div>
 
-        <div className="mb-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="mb-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {ASSISTANT_ORDER.map((id) => {
             const assistant = ASSISTANTS[id];
             const isActive = activeAssistant === id;
@@ -469,7 +513,7 @@ export default function AssistantsClient() {
             })}
 
             {result.responses.some((response) => response.assistantId === "marketing") ? (
-              <MarketingOutputSystem input={input} result={result} />
+              <MarketingSystemHandoff input={input} result={result} copy={copy} />
             ) : null}
 
             <Section

@@ -6,6 +6,7 @@ const routes = [
   "/ecosystem",
   "/builder",
   "/assistants",
+  "/marketing-system",
   "/prompt-engine",
   "/docs",
 ];

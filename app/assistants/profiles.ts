@@ -66,7 +66,6 @@ export const ASSISTANTS: Record<AssistantId, AssistantMeta> = {
 export const ASSISTANT_ORDER: AssistantId[] = [
   "core",
   "orchestrator",
-  "marketing",
   "maintenance",
   "commerce",
 ];

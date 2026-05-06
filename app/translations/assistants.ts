@@ -1,3 +1,5 @@
+import { marketingSystemTranslations } from "./marketing-system";
+
 export type AssistantsTranslation = {
   hero: {
     eyebrow: string;
@@ -38,6 +40,10 @@ export type AssistantsTranslation = {
     orchestratorPlan: string;
     task: string;
     qualityReview: string;
+    marketingHandoffEyebrow: string;
+    marketingHandoffHeadline: string;
+    marketingHandoffDescription: string;
+    marketingHandoffCta: string;
     assistantFunctions: {
       core: string;
       orchestrator: string;
@@ -46,39 +52,7 @@ export type AssistantsTranslation = {
       commerce: string;
     };
   };
-  marketing: {
-    eyebrow: string;
-    headline: string;
-    description: string;
-    generate: string;
-    ready: string;
-    insufficientCredits: string;
-    generated: string;
-    captionCopied: string;
-    promptCopied: string;
-    saved: string;
-    scheduled: string;
-    visualPrep: string;
-    visualPrepTitle: string;
-    backgroundMode: string;
-    format: string;
-    style: string;
-    size: string;
-    status: string;
-    visualPrompt: string;
-    generateImage: string;
-    copyPrompt: string;
-    downloadImage: string;
-    copyCaption: string;
-    saveCampaign: string;
-    publishLater: string;
-    campaign: string;
-    platform: string;
-    cta: string;
-    localDrafts: string;
-    noDrafts: string;
-    emptyState: string;
-  };
+  marketing: typeof marketingSystemTranslations.en.system;
 };
 
 export const assistantsTranslations: Record<string, AssistantsTranslation> = {
@@ -125,6 +99,12 @@ export const assistantsTranslations: Record<string, AssistantsTranslation> = {
       orchestratorPlan: "Orchestrator Plan",
       task: "Module Brief",
       qualityReview: "Quality Review",
+      marketingHandoffEyebrow: "Marketing Handoff",
+      marketingHandoffHeadline:
+        "Continue this output inside the dedicated Marketing System.",
+      marketingHandoffDescription:
+        "The assistant context is ready for Social Pack generation, visual prompt preparation, and local campaign drafts.",
+      marketingHandoffCta: "Open Marketing System",
       assistantFunctions: {
         core: "Structure raw requests into execution logic",
         orchestrator: "Sequence modules into one controlled handoff",
@@ -133,42 +113,7 @@ export const assistantsTranslations: Record<string, AssistantsTranslation> = {
         commerce: "Clarify offer architecture and conversion path",
       },
     },
-    marketing: {
-      eyebrow: "Marketing Output System",
-      headline: "Generate a commercial Social Pack from the Marketing module.",
-      description:
-        "V1 creates two local visual variants, caption, hashtags, CTA, campaign metadata, and draft actions. No live publishing or platform integrations are connected.",
-      generate: "Generate Social Pack",
-      ready: "Ready to generate a local Social Pack.",
-      insufficientCredits:
-        "Insufficient credits for Marketing Social Pack generation.",
-      generated: "Social Pack generated as a local draft.",
-      captionCopied: "Caption copied to clipboard.",
-      promptCopied: "Visual prompt copied to clipboard.",
-      saved: "Campaign saved locally.",
-      scheduled: "Publish Later saved as a local reminder only.",
-      visualPrep: "Image Generation Prep",
-      visualPrepTitle: "Professional image request model",
-      backgroundMode: "Background Mode",
-      format: "Format",
-      style: "Style",
-      size: "Size",
-      status: "Status",
-      visualPrompt: "Visual Prompt",
-      generateImage: "Generate Professional Image",
-      copyPrompt: "Copy Prompt",
-      downloadImage: "Download Image",
-      copyCaption: "Copy Caption",
-      saveCampaign: "Save Campaign",
-      publishLater: "Publish Later",
-      campaign: "Campaign",
-      platform: "Platform",
-      cta: "CTA",
-      localDrafts: "Local Drafts",
-      noDrafts: "No saved campaigns yet.",
-      emptyState:
-        "Generate the Social Pack after reviewing the assistant output. Saved campaigns remain local to this browser.",
-    },
+    marketing: marketingSystemTranslations.en.system,
   },
   ro: {
     hero: {
@@ -213,6 +158,12 @@ export const assistantsTranslations: Record<string, AssistantsTranslation> = {
       orchestratorPlan: "Plan de orchestrare",
       task: "Brief de modul",
       qualityReview: "Revizuire de calitate",
+      marketingHandoffEyebrow: "Handoff Marketing",
+      marketingHandoffHeadline:
+        "Continuă acest output în sistemul dedicat de Marketing.",
+      marketingHandoffDescription:
+        "Contextul asistenților este pregătit pentru generarea Social Pack-ului, pregătirea prompturilor vizuale și drafturi locale de campanie.",
+      marketingHandoffCta: "Deschide Marketing System",
       assistantFunctions: {
         core: "Structurează cereri brute în logică de execuție",
         orchestrator: "Secvențiază modulele într-un handoff controlat",
@@ -221,41 +172,6 @@ export const assistantsTranslations: Record<string, AssistantsTranslation> = {
         commerce: "Clarifică arhitectura de ofertă și calea de conversie",
       },
     },
-    marketing: {
-      eyebrow: "Sistem de output marketing",
-      headline: "Generează un Social Pack comercial din modulul Marketing.",
-      description:
-        "V1 creează două variante vizuale locale, caption, hashtaguri, CTA, metadate de campanie și acțiuni de draft. Publicarea live și integrările de platformă nu sunt conectate.",
-      generate: "Generează Social Pack",
-      ready: "Pregătit pentru generarea unui Social Pack local.",
-      insufficientCredits:
-        "Credite insuficiente pentru generarea Social Pack-ului Marketing.",
-      generated: "Social Pack generat ca draft local.",
-      captionCopied: "Caption copiat în clipboard.",
-      promptCopied: "Promptul vizual a fost copiat în clipboard.",
-      saved: "Campanie salvată local.",
-      scheduled: "Publish Later salvat doar ca reminder local.",
-      visualPrep: "Pregătire imagine",
-      visualPrepTitle: "Model profesional pentru cererea de imagine",
-      backgroundMode: "Mod fundal",
-      format: "Format",
-      style: "Stil",
-      size: "Dimensiune",
-      status: "Status",
-      visualPrompt: "Prompt vizual",
-      generateImage: "Generează imagine profesională",
-      copyPrompt: "Copiază promptul",
-      downloadImage: "Descarcă imaginea",
-      copyCaption: "Copiază captionul",
-      saveCampaign: "Salvează campania",
-      publishLater: "Publică mai târziu",
-      campaign: "Campanie",
-      platform: "Platformă",
-      cta: "CTA",
-      localDrafts: "Drafturi locale",
-      noDrafts: "Nu există campanii salvate.",
-      emptyState:
-        "Generează Social Pack-ul după revizuirea outputului. Campaniile salvate rămân locale în acest browser.",
-    },
+    marketing: marketingSystemTranslations.ro.system,
   },
 };
