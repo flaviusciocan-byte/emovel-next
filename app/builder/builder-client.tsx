@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AddCreditsModal,
   CreditDisplay,
@@ -22,10 +22,35 @@ import {
   type TemplateSpecValidationResult,
 } from "./schema/v1";
 import type { ExportManifest } from "./types";
+import { getStoredSupabaseAccessToken } from "../../lib/auth/browser-session";
 
 interface ImportedTemplate {
   spec: TemplateSpecV1;
   validation: TemplateSpecValidationResult;
+}
+
+interface PersistedBuilderSection {
+  id: string;
+  section_key: string;
+  position: number;
+  content?: Record<string, unknown>;
+}
+
+interface PersistedBuilderProject {
+  id: string;
+  name: string;
+  sections: PersistedBuilderSection[];
+}
+
+interface BuilderBootstrapResponse {
+  workspace: {
+    id: string;
+    name: string;
+  };
+  projects: Array<{
+    id: string;
+    name: string;
+  }>;
 }
 
 function textFieldClass() {
@@ -200,6 +225,10 @@ function createManifest(spec: TemplateSpecV1, validation: TemplateSpecValidation
   };
 }
 
+function isTemplateSpecSnapshot(value: unknown): value is TemplateSpecV1 {
+  return validateTemplateSpecV1(value).isValid;
+}
+
 export default function BuilderClient() {
   const { credits, costs, canAfford, spendCredits } = useCredits();
   const addCreditsModal = useAddCreditsModal();
@@ -209,20 +238,227 @@ export default function BuilderClient() {
   const [importStatus, setImportStatus] = useState("Paste a single Template Spec v1 or a { templates: [...] } batch.");
   const [importedTemplates, setImportedTemplates] = useState<ImportedTemplate[]>([]);
   const [selectedImportedIndex, setSelectedImportedIndex] = useState(0);
-  const [manifestStatus, setManifestStatus] = useState("Generate or import a Template Spec v1 before exporting.");
+  const [manifestStatus, setManifestStatus] = useState("Generate or import a page structure before exporting.");
   const [hasGenerated, setHasGenerated] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [authToken, setAuthToken] = useState<string | null>(null);
+  const [backendStatus, setBackendStatus] = useState(
+    "Persistence is waiting for an authenticated Supabase session.",
+  );
+  const [persistedProject, setPersistedProject] = useState<PersistedBuilderProject | null>(null);
+  const [persistedWorkspaceId, setPersistedWorkspaceId] = useState<string | null>(null);
 
   const validation = useMemo(() => validateTemplateSpecV1(spec), [spec]);
   const manifestPreview = useMemo(() => createManifest(spec, validation), [spec, validation]);
   const disabledReason = !systemBrief.trim()
-    ? "Enter a system brief to generate the Builder preview."
+    ? "Enter a page brief to generate the preview."
     : !canAfford("builder-generation")
-      ? "Add credits to generate the Builder system."
+      ? "Add credits to generate the page."
       : "";
 
+  useEffect(() => {
+    const token = getStoredSupabaseAccessToken();
+
+    if (!token) {
+      setBackendStatus(
+        "No authenticated Supabase session detected. Builder preview is available, but projects will not persist.",
+      );
+      return;
+    }
+
+    setAuthToken(token);
+
+    async function bootstrapBuilder() {
+      try {
+        const response = await fetch("/api/builder/bootstrap", {
+          headers: authHeaders(token),
+        });
+
+        if (!response.ok) {
+          throw new Error("Unable to connect Builder workspace.");
+        }
+
+        const data = (await response.json()) as BuilderBootstrapResponse;
+        setPersistedWorkspaceId(data.workspace.id);
+
+        if (data.projects.length > 0) {
+          await loadPersistedProject(data.projects[0].id, token);
+          setBackendStatus(`Connected to ${data.workspace.name}. Latest project loaded.`);
+          return;
+        }
+
+        setBackendStatus(`Connected to ${data.workspace.name}. Generate a page to create your first project.`);
+      } catch (error) {
+        setBackendStatus(error instanceof Error ? error.message : "Builder persistence is unavailable.");
+      }
+    }
+
+    void bootstrapBuilder();
+  }, []);
+
   function markDirty() {
-    setManifestStatus("Template changed. Export will use the current selected spec.");
+    setManifestStatus("Page structure changed. Export will use the current selection.");
+  }
+
+  function authHeaders(token = authToken): Record<string, string> {
+    const headers: Record<string, string> = {
+      "content-type": "application/json",
+    };
+
+    if (token) {
+      headers.authorization = `Bearer ${token}`;
+    }
+
+    return headers;
+  }
+
+  async function loadPersistedProject(projectId: string, token = authToken) {
+    if (!token) {
+      return null;
+    }
+
+    const response = await fetch(`/api/builder/projects/${projectId}`, {
+      headers: authHeaders(token),
+    });
+
+    if (!response.ok) {
+      throw new Error("Unable to load persisted project.");
+    }
+
+    const data = (await response.json()) as { project: PersistedBuilderProject };
+    const snapshot = data.project.sections
+      .map((section) => section.content?.specSnapshot)
+      .find(isTemplateSpecSnapshot);
+
+    setPersistedProject(data.project);
+
+    if (snapshot) {
+      setSpec(snapshot);
+      setHasGenerated(true);
+      setManifestStatus("Persisted page structure loaded from workspace.");
+    }
+
+    return data.project;
+  }
+
+  async function ensurePersistedProject(nextSpec: TemplateSpecV1) {
+    if (!authToken) {
+      setBackendStatus("Sign in with Supabase to persist Builder projects. Local preview still works.");
+      return null;
+    }
+
+    if (persistedProject) {
+      return persistedProject;
+    }
+
+    const response = await fetch("/api/builder/projects", {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({
+        name: nextSpec.templateName,
+        product_type: nextSpec.pageType,
+        commercial_goal: nextSpec.positioning,
+        fixed_section_order: nextSpec.sections.map((section) => section.id),
+      }),
+    });
+
+    if (!response.ok) {
+      const data = (await response.json().catch(() => null)) as { error?: string } | null;
+      setBackendStatus(data?.error || "Project persistence failed.");
+      return null;
+    }
+
+    const data = (await response.json()) as {
+      project: PersistedBuilderProject | null;
+      workspace: { id: string };
+    };
+
+    setPersistedWorkspaceId(data.workspace.id);
+
+    if (data.project) {
+      setPersistedProject(data.project);
+      setBackendStatus("Project created in your personal workspace.");
+    }
+
+    return data.project;
+  }
+
+  async function persistSection(
+    project: PersistedBuilderProject,
+    nextSpec: TemplateSpecV1,
+    section: TemplateSpecV1["sections"][number],
+    index: number,
+    source: "manual" | "regenerate",
+  ) {
+    const persistedSection =
+      project.sections.find((item) => item.section_key === section.id) ||
+      project.sections.find((item) => item.position === index);
+
+    if (!persistedSection) {
+      return;
+    }
+
+    await fetch(`/api/builder/sections/${persistedSection.id}`, {
+      method: "PATCH",
+      headers: authHeaders(),
+      body: JSON.stringify({
+        projectId: project.id,
+        sectionKey: persistedSection.section_key,
+        section: {
+          title: section.title,
+          content: {
+            templateSpecSection: section,
+            specSnapshot: index === 0 ? nextSpec : undefined,
+          },
+          status: "ready",
+          error_message: null,
+        },
+        draft: {
+          content: {
+            templateSpecSection: section,
+            specSnapshot: index === 0 ? nextSpec : undefined,
+          },
+          source,
+        },
+      }),
+    });
+  }
+
+  async function persistSpec(nextSpec: TemplateSpecV1, source: "manual" | "regenerate") {
+    const project = await ensurePersistedProject(nextSpec);
+
+    if (!project) {
+      return;
+    }
+
+    await Promise.all(
+      nextSpec.sections.map((section, index) =>
+        persistSection(project, nextSpec, section, index, source),
+      ),
+    );
+    setBackendStatus("Page structure saved to your personal workspace.");
+  }
+
+  async function acceptPersistedSections() {
+    if (!authToken || !persistedProject) {
+      return;
+    }
+
+    await Promise.all(
+      persistedProject.sections.map((section) =>
+        fetch(`/api/builder/sections/${section.id}`, {
+          method: "PATCH",
+          headers: authHeaders(),
+          body: JSON.stringify({
+            projectId: persistedProject.id,
+            sectionKey: section.section_key,
+            section: {},
+            accept: true,
+          }),
+        }),
+      ),
+    );
+    setBackendStatus("Persisted sections marked as accepted.");
   }
 
   function updateSpecField<K extends keyof Pick<TemplateSpecV1, "templateName" | "pageType" | "positioning" | "targetAudience">>(
@@ -282,6 +518,14 @@ export default function BuilderClient() {
         sectionIndex === index ? { ...section, [field]: value } : section,
       ),
     }));
+    const nextSpec = {
+      ...spec,
+      sections: spec.sections.map((section, sectionIndex) =>
+        sectionIndex === index ? { ...section, [field]: value } : section,
+      ),
+    };
+
+    void persistSpec(nextSpec, "manual");
   }
 
   function updateSectionType(index: number, type: TemplateSectionTypeV1) {
@@ -294,6 +538,16 @@ export default function BuilderClient() {
           : section,
       ),
     }));
+    const nextSpec = {
+      ...spec,
+      sections: spec.sections.map((section, sectionIndex) =>
+        sectionIndex === index
+          ? { ...section, type, components: defaultComponentsFor(type) }
+          : section,
+      ),
+    };
+
+    void persistSpec(nextSpec, "manual");
   }
 
   function toggleSectionComponent(index: number, component: TemplateComponentTypeV1) {
@@ -314,6 +568,24 @@ export default function BuilderClient() {
         };
       }),
     }));
+    const nextSpec = {
+      ...spec,
+      sections: spec.sections.map((section, sectionIndex) => {
+        if (sectionIndex !== index) {
+          return section;
+        }
+
+        const hasComponent = section.components.includes(component);
+        return {
+          ...section,
+          components: hasComponent
+            ? section.components.filter((item) => item !== component)
+            : [...section.components, component],
+        };
+      }),
+    };
+
+    void persistSpec(nextSpec, "manual");
   }
 
   function addSection() {
@@ -334,22 +606,25 @@ export default function BuilderClient() {
 
   function generateSystem() {
     if (!systemBrief.trim()) {
-      setManifestStatus("Add a system brief before generating.");
+      setManifestStatus("Add a page brief before generating.");
       return;
     }
 
     if (!spendCredits("builder-generation")) {
-      setManifestStatus("Insufficient credits for Builder generation.");
+      setManifestStatus("Insufficient credits for page generation.");
       addCreditsModal.showAddCredits();
       return;
     }
 
-    setSpec(createSpecFromBrief(systemBrief));
+    const nextSpec = createSpecFromBrief(systemBrief);
+
+    setSpec(nextSpec);
     setImportedTemplates([]);
     setSelectedImportedIndex(0);
     setHasGenerated(true);
     setAdvancedOpen(false);
-    setManifestStatus("Template Spec v1 generated. Export is ready.");
+    setManifestStatus("Page structure generated. Export is ready.");
+    void persistSpec(nextSpec, "regenerate");
   }
 
   function importJson() {
@@ -373,12 +648,13 @@ export default function BuilderClient() {
       if (validEntries.length > 0) {
         setSpec(validEntries[0].spec);
         setHasGenerated(true);
+        void persistSpec(validEntries[0].spec, "manual");
       }
 
       setImportStatus(
         `${validEntries.length} valid template(s), ${invalidCount} invalid template(s). Invalid templates were not loaded.`,
       );
-      setManifestStatus("Imported Template Spec v1 is ready for selected-template export.");
+      setManifestStatus("Imported page structure is ready for selected-template export.");
     } catch (error) {
       setImportStatus(error instanceof Error ? error.message : "JSON import failed.");
     }
@@ -393,25 +669,28 @@ export default function BuilderClient() {
 
     setSelectedImportedIndex(index);
     setSpec(selected.spec);
-    setManifestStatus("Selected imported template is ready for export.");
+    setManifestStatus("Selected imported page structure is ready for export.");
+    void persistSpec(selected.spec, "manual");
   }
 
   async function copyManifest() {
     if (!hasGenerated) {
-      setManifestStatus("Generate or import a Template Spec v1 before exporting.");
+      setManifestStatus("Generate or import a page structure before exporting.");
       return;
     }
 
+    await acceptPersistedSections();
     await navigator.clipboard.writeText(JSON.stringify(manifestPreview, null, 2));
-    setManifestStatus("Template Spec v1 manifest copied to clipboard.");
+    setManifestStatus("Page manifest copied to clipboard.");
   }
 
-  function downloadManifest() {
+  async function downloadManifest() {
     if (!hasGenerated) {
-      setManifestStatus("Generate or import a Template Spec v1 before exporting.");
+      setManifestStatus("Generate or import a page structure before exporting.");
       return;
     }
 
+    await acceptPersistedSections();
     const blob = new Blob([JSON.stringify(manifestPreview, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -420,7 +699,7 @@ export default function BuilderClient() {
     link.download = `${spec.templateName}-v1-manifest.json`;
     link.click();
     URL.revokeObjectURL(url);
-    setManifestStatus("Selected Template Spec v1 manifest downloaded locally.");
+    setManifestStatus("Selected page manifest downloaded locally.");
   }
 
   return (
@@ -430,26 +709,26 @@ export default function BuilderClient() {
     >
       <div className="mb-10 max-w-3xl">
         <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-white/45">
-          TEMPLATE SPEC V1 BUILDER
+          EMOVEL PAGE BUILDER
         </p>
         <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-          Import, validate, and preview EMOVEL Template Specs.
+          Generate a premium commercial page from a focused brief.
         </h2>
         <p className="mt-4 text-sm leading-7 text-white/55">
-          Builder now preserves commercial fields, component arrays, pricing logic, CTA systems,
-          and all Template Spec v1 section types.
+          Shape the offer, page structure, CTA direction, and preview surface without exposing the
+          technical template system until you need advanced control.
         </p>
       </div>
 
       <div className="mb-5 border border-white/10 bg-white/[0.035] p-6 sm:p-8">
         <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
           <label className="space-y-3">
-            <span className={labelClass()}>System Brief</span>
+            <span className={labelClass()}>Page Brief</span>
             <textarea
               value={systemBrief}
               onChange={(event) => setSystemBrief(event.target.value)}
               rows={6}
-              placeholder="Describe the digital product page, audience, offer, and conversion path you want to build..."
+              placeholder="Describe the page, audience, offer, commercial angle, and conversion path you want to build..."
               className="w-full resize-none border border-white/10 bg-black/35 px-5 py-4 text-sm leading-7 text-white outline-none transition placeholder:text-white/25 focus:border-white/35"
             />
           </label>
@@ -463,7 +742,7 @@ export default function BuilderClient() {
                 disabled={!systemBrief.trim() || !canAfford("builder-generation")}
                 className="inline-flex h-14 w-full items-center justify-center rounded-full bg-white px-7 text-sm font-semibold uppercase tracking-[0.2em] text-black hover:bg-white/85 disabled:cursor-not-allowed disabled:bg-white/25 disabled:text-white/40"
               >
-                Generate V1 Spec ({costs["builder-generation"].estimatedCreditCost} credits)
+                Generate Page ({costs["builder-generation"].estimatedCreditCost} credits)
               </button>
               {disabledReason ? (
                 <p className="mt-3 text-xs leading-6 text-slate-500">{disabledReason}</p>
@@ -482,38 +761,18 @@ export default function BuilderClient() {
         </div>
       ) : null}
 
-      <ImportPanel
-        importValue={importValue}
-        importStatus={importStatus}
-        importedTemplates={importedTemplates}
-        selectedImportedIndex={selectedImportedIndex}
-        onImportValueChange={setImportValue}
-        onImportJson={importJson}
-        onSelectImportedTemplate={selectImportedTemplate}
-      />
-
-      <ValidationReport spec={spec} validation={validation} />
+      <div className="mb-5 border border-white/10 bg-black/25 p-5 text-sm leading-7 text-white/55">
+        {backendStatus}
+      </div>
 
       {hasGenerated ? (
-        <div className="grid gap-5 xl:grid-cols-[minmax(0,0.95fr)_minmax(460px,1.05fr)]">
-          <SpecPanel
-            spec={spec}
-            onUpdateSpecField={updateSpecField}
-            onUpdateTemplateId={updateTemplateId}
-            onUpdateOfferField={updateOfferField}
-            onUpdateCtaField={updateCtaField}
-            onUpdatePricingModel={updatePricingModel}
-            onAddSection={addSection}
-            onRemoveSection={removeSection}
-            onUpdateSection={updateSection}
-            onUpdateSectionType={updateSectionType}
-            onToggleSectionComponent={toggleSectionComponent}
-          />
+        <div className="space-y-5">
+          <CommercialSummary spec={spec} validation={validation} />
           <PreviewPanel spec={spec} manifest={manifestPreview} />
         </div>
       ) : (
         <div className="border border-white/10 bg-black/25 p-8 text-sm leading-7 text-white/50">
-          Generate or import a valid Template Spec v1 to reveal the preview.
+          Generate a page or import a valid structure from Advanced Control to reveal the preview.
         </div>
       )}
 
@@ -524,24 +783,96 @@ export default function BuilderClient() {
           className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left"
         >
           <span className="text-xs font-semibold uppercase tracking-[0.24em] text-white">
-            Advanced Export
+            Advanced Control
           </span>
           <span className="text-sm text-white/45">{advancedOpen ? "Close" : "Open"}</span>
         </button>
 
         {advancedOpen ? (
-          <ManifestPanel
-            manifestStatus={manifestStatus}
-            manifestPreview={manifestPreview}
-            canExport={hasGenerated}
-            onCopy={copyManifest}
-            onDownload={downloadManifest}
-          />
+          <div className="border-t border-white/10 p-4 sm:p-6">
+            <ImportPanel
+              importValue={importValue}
+              importStatus={importStatus}
+              importedTemplates={importedTemplates}
+              selectedImportedIndex={selectedImportedIndex}
+              onImportValueChange={setImportValue}
+              onImportJson={importJson}
+              onSelectImportedTemplate={selectImportedTemplate}
+            />
+
+            <ValidationReport spec={spec} validation={validation} />
+
+            {hasGenerated ? (
+              <SpecPanel
+                spec={spec}
+                onUpdateSpecField={updateSpecField}
+                onUpdateTemplateId={updateTemplateId}
+                onUpdateOfferField={updateOfferField}
+                onUpdateCtaField={updateCtaField}
+                onUpdatePricingModel={updatePricingModel}
+                onAddSection={addSection}
+                onRemoveSection={removeSection}
+                onUpdateSection={updateSection}
+                onUpdateSectionType={updateSectionType}
+                onToggleSectionComponent={toggleSectionComponent}
+              />
+            ) : (
+              <div className="mb-5 border border-white/10 bg-black/25 p-6 text-sm leading-7 text-white/50">
+                Generate or import a page before editing the full structure.
+              </div>
+            )}
+
+            <ManifestPanel
+              manifestStatus={manifestStatus}
+              manifestPreview={manifestPreview}
+              canExport={hasGenerated}
+              onCopy={copyManifest}
+              onDownload={downloadManifest}
+            />
+          </div>
         ) : null}
       </div>
 
       <AddCreditsModal open={addCreditsModal.open} onClose={addCreditsModal.hideAddCredits} />
     </section>
+  );
+}
+
+function CommercialSummary({
+  spec,
+  validation,
+}: {
+  spec: TemplateSpecV1;
+  validation: TemplateSpecValidationResult;
+}) {
+  const templateMeta = getTemplateMeta(spec.templateId);
+
+  return (
+    <div className="grid gap-5 lg:grid-cols-[0.8fr_1.2fr]">
+      <div className="border border-white/10 bg-white/[0.035] p-6">
+        <p className={labelClass()}>Commercial Summary</p>
+        <h3 className="mt-3 text-xl font-semibold text-white">
+          {spec.templateName}
+        </h3>
+        <div className="mt-5 grid gap-3 text-sm leading-7 text-white/55">
+          <p>Model: {templateMeta?.label || spec.templateId}</p>
+          <p>Sections: {spec.sections.length}</p>
+          <p>Readiness: {validation.readinessScore}/100</p>
+        </div>
+      </div>
+      <div className="border border-white/10 bg-black/25 p-6">
+        <p className={labelClass()}>Offer Direction</p>
+        <p className="mt-3 text-sm leading-7 text-white/65">{spec.offer.deliverable}</p>
+        <div className="mt-5 flex flex-wrap gap-3">
+          <span className="border border-white/15 px-3 py-2 text-xs uppercase tracking-[0.16em] text-white/55">
+            {spec.ctaSystem.primaryCtaLabel}
+          </span>
+          <span className="border border-white/10 px-3 py-2 text-xs uppercase tracking-[0.16em] text-white/35">
+            {spec.ctaSystem.secondaryCtaLabel}
+          </span>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -631,7 +962,7 @@ function ValidationReport({
   return (
     <div className="mb-5 grid gap-5 lg:grid-cols-[0.7fr_1fr]">
       <div className="border border-white/10 bg-white/[0.035] p-5">
-        <p className={labelClass()}>Validation Report</p>
+        <p className={labelClass()}>Technical Validation</p>
         <div className="mt-4 grid gap-3 text-sm text-white/60">
           <p>Template ID: {spec.templateId}</p>
           <p>Schema: {spec.schemaVersion}</p>
@@ -698,8 +1029,8 @@ function SpecPanel({
     <div className="min-w-0 overflow-hidden border border-white/10 bg-white/[0.035] p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className={labelClass()}>Template Spec</p>
-          <h3 className="mt-3 text-xl font-semibold text-white">Selected v1 template</h3>
+          <p className={labelClass()}>Page Structure</p>
+          <h3 className="mt-3 text-xl font-semibold text-white">Selected page structure</h3>
         </div>
         <button
           type="button"
@@ -905,7 +1236,7 @@ function PreviewPanel({
       <div className="flex items-center justify-between gap-4">
         <div>
           <p className={labelClass()}>Preview</p>
-          <h3 className="mt-3 text-xl font-semibold text-white">Template Spec v1 runtime</h3>
+          <h3 className="mt-3 text-xl font-semibold text-white">Generated page preview</h3>
         </div>
         <p className="text-xs uppercase tracking-[0.18em] text-white/40">
           {formatLabel(spec.stylePreset)} / {formatLabel(spec.designDensity)}
@@ -934,11 +1265,11 @@ function ManifestPanel({
 }) {
   return (
     <div className="min-w-0 overflow-hidden border-t border-white/10 p-4 sm:p-6">
-      <p className={labelClass()}>Export Manifest</p>
-      <h3 className="mt-3 text-xl font-semibold text-white">Selected Template Spec v1 only</h3>
+      <p className={labelClass()}>Advanced Export</p>
+      <h3 className="mt-3 text-xl font-semibold text-white">Selected page structure only</h3>
       <p className="mt-3 text-sm leading-7 text-white/55">
-        Batch imports can be previewed one template at a time. Export currently writes the selected
-        template only.
+        Batch imports can be previewed one page at a time. Export currently writes the selected
+        structure only.
       </p>
       <div className="mt-6 flex flex-col gap-3 sm:flex-row">
         <button
