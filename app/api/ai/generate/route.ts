@@ -3,6 +3,11 @@ import { captureServerEvent } from "../../../../lib/analytics/server-events";
 import { POSTHOG_EVENTS } from "../../../../lib/analytics/posthog-events";
 import { buildTemplateSpecPrompt } from "../../../../lib/ai/builder-prompt";
 import { classifyBoundaryRequest } from "../../../../lib/ai/boundary";
+import {
+  createAiRouteError,
+  mapUnknownAiRouteError,
+  type AiRouteErrorCategory,
+} from "../../../../lib/ai/error-map";
 import { getAvailableModelSequence, estimateCostCents } from "../../../../lib/ai/model-registry";
 import { streamAiText } from "../../../../lib/ai/providers";
 import { checkAiRateLimit } from "../../../../lib/ai/rate-limit";
@@ -37,17 +42,20 @@ function jsonError(status: number, payload: Record<string, unknown>) {
 
 function categorizedError(
   status: number,
-  category: string,
+  category: AiRouteErrorCategory,
   code: string,
   message: string | null | undefined,
   extra: Record<string, unknown> = {},
 ) {
-  return jsonError(status, {
+  const routeError = createAiRouteError({
+    status,
     category,
     code,
-    error: message || category,
-    ...extra,
+    message,
+    extra,
   });
+
+  return jsonError(routeError.status, routeError.payload);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -495,12 +503,8 @@ export async function POST(request: Request) {
   } catch (error) {
     void captureServerEvent(userId, POSTHOG_EVENTS.aiGenerateFailed, { reason: "route_error" });
 
-    const message = error instanceof Error ? error.message : "Unexpected AI route failure.";
+    const routeError = mapUnknownAiRouteError(error);
 
-    if (message === "Authentication required." || message === "Invalid or expired session.") {
-      return categorizedError(401, "unauthorized", "AUTH_REQUIRED", message);
-    }
-
-    return categorizedError(500, "internal_error", "INTERNAL_ERROR", message);
+    return jsonError(routeError.status, routeError.payload);
   }
 }
