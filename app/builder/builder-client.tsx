@@ -301,10 +301,11 @@ export default function BuilderClient() {
 
   const validation = useMemo(() => validateTemplateSpecV1(spec), [spec]);
   const manifestPreview = useMemo(() => createManifest(spec, validation), [spec, validation]);
+  const localCreditBlocked = !authToken && !canAfford("builder-generation");
   const disabledReason = !systemBrief.trim()
     ? "Enter a page brief to generate the preview."
-    : !canAfford("builder-generation")
-      ? "Add credits to generate the page."
+    : localCreditBlocked
+      ? "Add credits to generate the page in local mode."
       : isGenerating
         ? generationStateCopy(generationState)
       : "";
@@ -649,6 +650,7 @@ export default function BuilderClient() {
   async function readGenerationError(response: Response) {
     const data = (await response.json().catch(() => null)) as {
       code?: string;
+      allowLocalFallback?: boolean;
       error?: string;
       boundary?: {
         category?: string;
@@ -658,6 +660,7 @@ export default function BuilderClient() {
 
     return {
       code: data?.code,
+      allowLocalFallback: Boolean(data?.allowLocalFallback),
       message: data?.error || "AI generation failed.",
     };
   }
@@ -676,7 +679,7 @@ export default function BuilderClient() {
     if (!response.ok || !response.body) {
       const error = await readGenerationError(response);
 
-      if (error.code === "AI_NOT_CONFIGURED") {
+      if (error.code === "AI_NOT_CONFIGURED" && error.allowLocalFallback) {
         generateLocalFallback("AI provider is not configured. Local fallback generated for development.");
         return;
       }
@@ -751,12 +754,6 @@ export default function BuilderClient() {
       return;
     }
 
-    if (!spendCredits("builder-generation")) {
-      setManifestStatus("Insufficient credits for page generation.");
-      addCreditsModal.showAddCredits();
-      return;
-    }
-
     setIsGenerating(true);
     setGenerationState("generating");
     setStreamingPreview("");
@@ -764,6 +761,13 @@ export default function BuilderClient() {
 
     try {
       if (!authToken) {
+        if (!spendCredits("builder-generation")) {
+          setManifestStatus("Insufficient credits for local page generation.");
+          addCreditsModal.showAddCredits();
+          setGenerationState("error_billing");
+          return;
+        }
+
         generateLocalFallback("Local mode: generated without AI persistence. Sign in to use streaming AI.");
         return;
       }
@@ -927,7 +931,7 @@ export default function BuilderClient() {
               <button
                 type="button"
                 onClick={generateSystem}
-                disabled={!systemBrief.trim() || !canAfford("builder-generation") || isGenerating}
+                disabled={!systemBrief.trim() || localCreditBlocked || isGenerating}
                 className="inline-flex h-14 w-full items-center justify-center rounded-full bg-white px-7 text-sm font-semibold uppercase tracking-[0.2em] text-black hover:bg-white/85 disabled:cursor-not-allowed disabled:bg-white/25 disabled:text-white/40"
               >
                 {isGenerating
@@ -953,7 +957,7 @@ export default function BuilderClient() {
         </div>
       ) : null}
 
-      {!canAfford("builder-generation") ? (
+      {localCreditBlocked ? (
         <div className="mb-5">
           <InsufficientCredits
             action="builder-generation"
