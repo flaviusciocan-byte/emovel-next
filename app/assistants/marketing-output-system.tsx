@@ -160,6 +160,10 @@ function createImageModel(
 }
 
 function readCampaigns(): SavedMarketingCampaign[] {
+  if (typeof window === "undefined") {
+    return [];
+  }
+
   try {
     const saved = window.localStorage.getItem(storageKey);
     return saved ? (JSON.parse(saved) as SavedMarketingCampaign[]) : [];
@@ -230,21 +234,21 @@ export default function MarketingOutputSystem({
   const addCreditsModal = useAddCreditsModal();
   const [marketingResult, setMarketingResult] = useState<MarketingResult | null>(null);
   const [imageModel, setImageModel] = useState<MarketingImageModel | null>(null);
-  const [savedCampaigns, setSavedCampaigns] = useState<SavedMarketingCampaign[]>([]);
+  const [savedCampaigns, setSavedCampaigns] = useState<SavedMarketingCampaign[]>(() => readCampaigns());
   const [selectedVariant, setSelectedVariant] = useState<"A" | "B">("A");
   const [statusMessage, setStatusMessage] = useState(copy.ready);
 
   const sourceKey = useMemo(() => `${input}-${result.timestamp}`, [input, result.timestamp]);
 
   useEffect(() => {
-    setSavedCampaigns(readCampaigns());
-  }, []);
+    const timeoutId = window.setTimeout(() => {
+      setMarketingResult(null);
+      setImageModel(null);
+      setSelectedVariant("A");
+      setStatusMessage(copy.ready);
+    }, 0);
 
-  useEffect(() => {
-    setMarketingResult(null);
-    setImageModel(null);
-    setSelectedVariant("A");
-    setStatusMessage(copy.ready);
+    return () => window.clearTimeout(timeoutId);
   }, [copy.ready, sourceKey]);
 
   function generateSocialPack() {
