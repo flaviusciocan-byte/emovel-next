@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
   AddCreditsModal,
@@ -22,7 +23,7 @@ import {
   type TemplateSpecValidationResult,
 } from "./schema/v1";
 import type { ExportManifest } from "./types";
-import { getStoredSupabaseAccessToken } from "../../lib/auth/browser-session";
+import { useAuthSession } from "../../lib/auth/use-auth-session";
 
 interface ImportedTemplate {
   spec: TemplateSpecV1;
@@ -33,6 +34,7 @@ interface PersistedBuilderSection {
   id: string;
   section_key: string;
   position: number;
+  status?: string;
   content?: Record<string, unknown>;
 }
 
@@ -42,15 +44,46 @@ interface PersistedBuilderProject {
   sections: PersistedBuilderSection[];
 }
 
+interface BuilderBrandProfile {
+  brand_name: string;
+  audience: string | null;
+  tone: string | null;
+  visual_direction: string | null;
+  offer_positioning: string | null;
+}
+
 interface BuilderBootstrapResponse {
+  profile: {
+    onboarding_step: "brand_profile" | "first_project" | "complete";
+  } | null;
   workspace: {
     id: string;
     name: string;
   };
+  brandProfile: BuilderBrandProfile | null;
   projects: Array<{
     id: string;
     name: string;
   }>;
+}
+
+type BuilderGenerationState =
+  | "empty"
+  | "generating"
+  | "streaming_partial"
+  | "ready"
+  | "error_retryable"
+  | "error_blocked"
+  | "error_billing"
+  | "error_rate_limited";
+
+interface AiGenerateEvent {
+  type: "status" | "partial" | "spec" | "error";
+  status?: BuilderGenerationState;
+  content?: string;
+  spec?: TemplateSpecV1;
+  code?: string;
+  error?: string;
 }
 
 function textFieldClass() {
@@ -225,11 +258,27 @@ function createManifest(spec: TemplateSpecV1, validation: TemplateSpecValidation
   };
 }
 
+function generationStateCopy(state: BuilderGenerationState) {
+  const map: Record<BuilderGenerationState, string> = {
+    empty: "Ready for a focused commercial brief.",
+    generating: "Generating with the configured AI provider...",
+    streaming_partial: "Streaming AI output into the project workspace...",
+    ready: "AI generation completed. Sections are ready for review.",
+    error_retryable: "Generation stopped. Adjust the brief or retry.",
+    error_blocked: "Boundary layer blocked this request.",
+    error_billing: "Plan limit reached for AI generation.",
+    error_rate_limited: "Rate limit reached. Try again shortly.",
+  };
+
+  return map[state];
+}
+
 function isTemplateSpecSnapshot(value: unknown): value is TemplateSpecV1 {
   return validateTemplateSpecV1(value).isValid;
 }
 
 export default function BuilderClient() {
+  const { token: authToken, signOut: signOutSession } = useAuthSession();
   const { credits, costs, canAfford, spendCredits } = useCredits();
   const addCreditsModal = useAddCreditsModal();
   const [systemBrief, setSystemBrief] = useState(defaultBrief);
@@ -241,12 +290,14 @@ export default function BuilderClient() {
   const [manifestStatus, setManifestStatus] = useState("Generate or import a page structure before exporting.");
   const [hasGenerated, setHasGenerated] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
-  const [authToken, setAuthToken] = useState<string | null>(null);
   const [backendStatus, setBackendStatus] = useState(
-    "Persistence is waiting for an authenticated Supabase session.",
+    "Local mode: sign in to save projects and continue later.",
   );
   const [persistedProject, setPersistedProject] = useState<PersistedBuilderProject | null>(null);
-  const [persistedWorkspaceId, setPersistedWorkspaceId] = useState<string | null>(null);
+  const [brandProfile, setBrandProfile] = useState<BuilderBrandProfile | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationState, setGenerationState] = useState<BuilderGenerationState>("empty");
+  const [streamingPreview, setStreamingPreview] = useState("");
 
   const validation = useMemo(() => validateTemplateSpecV1(spec), [spec]);
   const manifestPreview = useMemo(() => createManifest(spec, validation), [spec, validation]);
@@ -254,19 +305,15 @@ export default function BuilderClient() {
     ? "Enter a page brief to generate the preview."
     : !canAfford("builder-generation")
       ? "Add credits to generate the page."
+      : isGenerating
+        ? generationStateCopy(generationState)
       : "";
 
   useEffect(() => {
-    const token = getStoredSupabaseAccessToken();
-
-    if (!token) {
-      setBackendStatus(
-        "No authenticated Supabase session detected. Builder preview is available, but projects will not persist.",
-      );
+    if (!authToken) {
       return;
     }
-
-    setAuthToken(token);
+    const token = authToken;
 
     async function bootstrapBuilder() {
       try {
@@ -279,7 +326,7 @@ export default function BuilderClient() {
         }
 
         const data = (await response.json()) as BuilderBootstrapResponse;
-        setPersistedWorkspaceId(data.workspace.id);
+        setBrandProfile(data.brandProfile || null);
 
         if (data.projects.length > 0) {
           await loadPersistedProject(data.projects[0].id, token);
@@ -294,6 +341,8 @@ export default function BuilderClient() {
     }
 
     void bootstrapBuilder();
+    // Builder bootstrap intentionally runs once from the stored browser session.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function markDirty() {
@@ -343,7 +392,7 @@ export default function BuilderClient() {
 
   async function ensurePersistedProject(nextSpec: TemplateSpecV1) {
     if (!authToken) {
-      setBackendStatus("Sign in with Supabase to persist Builder projects. Local preview still works.");
+      setBackendStatus("Local mode: sign in to save projects and continue later.");
       return null;
     }
 
@@ -372,8 +421,6 @@ export default function BuilderClient() {
       project: PersistedBuilderProject | null;
       workspace: { id: string };
     };
-
-    setPersistedWorkspaceId(data.workspace.id);
 
     if (data.project) {
       setPersistedProject(data.project);
@@ -437,28 +484,6 @@ export default function BuilderClient() {
       ),
     );
     setBackendStatus("Page structure saved to your personal workspace.");
-  }
-
-  async function acceptPersistedSections() {
-    if (!authToken || !persistedProject) {
-      return;
-    }
-
-    await Promise.all(
-      persistedProject.sections.map((section) =>
-        fetch(`/api/builder/sections/${section.id}`, {
-          method: "PATCH",
-          headers: authHeaders(),
-          body: JSON.stringify({
-            projectId: persistedProject.id,
-            sectionKey: section.section_key,
-            section: {},
-            accept: true,
-          }),
-        }),
-      ),
-    );
-    setBackendStatus("Persisted sections marked as accepted.");
   }
 
   function updateSpecField<K extends keyof Pick<TemplateSpecV1, "templateName" | "pageType" | "positioning" | "targetAudience">>(
@@ -604,7 +629,123 @@ export default function BuilderClient() {
     }));
   }
 
-  function generateSystem() {
+  function applyGeneratedSpec(nextSpec: TemplateSpecV1, status: string) {
+    setSpec(nextSpec);
+    setImportedTemplates([]);
+    setSelectedImportedIndex(0);
+    setHasGenerated(true);
+    setAdvancedOpen(false);
+    setManifestStatus(status);
+  }
+
+  function generateLocalFallback(status = "Local fallback generated. Export is ready.") {
+    const nextSpec = createSpecFromBrief(systemBrief);
+
+    applyGeneratedSpec(nextSpec, status);
+    setGenerationState("ready");
+    void persistSpec(nextSpec, "regenerate");
+  }
+
+  async function readGenerationError(response: Response) {
+    const data = (await response.json().catch(() => null)) as {
+      code?: string;
+      error?: string;
+      boundary?: {
+        category?: string;
+        requiredClarification?: string;
+      };
+    } | null;
+
+    return {
+      code: data?.code,
+      message: data?.error || "AI generation failed.",
+    };
+  }
+
+  async function streamAiGeneration(project: PersistedBuilderProject) {
+    const response = await fetch("/api/ai/generate", {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({
+        brief: systemBrief,
+        projectId: project.id,
+        currentSpec: spec,
+      }),
+    });
+
+    if (!response.ok || !response.body) {
+      const error = await readGenerationError(response);
+
+      if (error.code === "AI_NOT_CONFIGURED") {
+        generateLocalFallback("AI provider is not configured. Local fallback generated for development.");
+        return;
+      }
+
+      if (error.code === "RATE_LIMITED") {
+        setGenerationState("error_rate_limited");
+      } else if (error.code === "BILLING_GATE") {
+        setGenerationState("error_billing");
+      } else if (error.code === "BLOCKED_REQUEST") {
+        setGenerationState("error_blocked");
+      } else {
+        setGenerationState("error_retryable");
+      }
+
+      setManifestStatus(error.message);
+      setBackendStatus(error.message);
+      return;
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+
+      if (done) {
+        break;
+      }
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+
+      for (const line of lines) {
+        if (!line.trim()) {
+          continue;
+        }
+
+        const event = JSON.parse(line) as AiGenerateEvent;
+
+        if (event.type === "status") {
+          setGenerationState(event.status || "generating");
+          setManifestStatus(generationStateCopy(event.status || "generating"));
+        }
+
+        if (event.type === "partial" && event.content) {
+          setGenerationState("streaming_partial");
+          setStreamingPreview((current) => `${current}${event.content}`.slice(-900));
+          setManifestStatus(generationStateCopy("streaming_partial"));
+        }
+
+        if (event.type === "spec" && event.spec) {
+          applyGeneratedSpec(event.spec, "AI generation completed. Export is ready.");
+          setGenerationState("ready");
+          setStreamingPreview("");
+          await loadPersistedProject(project.id);
+        }
+
+        if (event.type === "error") {
+          setGenerationState("error_retryable");
+          setManifestStatus(event.error || "AI generation failed.");
+          setBackendStatus(event.error || "AI generation failed.");
+        }
+      }
+    }
+  }
+
+  async function generateSystem() {
     if (!systemBrief.trim()) {
       setManifestStatus("Add a page brief before generating.");
       return;
@@ -616,15 +757,32 @@ export default function BuilderClient() {
       return;
     }
 
-    const nextSpec = createSpecFromBrief(systemBrief);
+    setIsGenerating(true);
+    setGenerationState("generating");
+    setStreamingPreview("");
+    setManifestStatus(generationStateCopy("generating"));
 
-    setSpec(nextSpec);
-    setImportedTemplates([]);
-    setSelectedImportedIndex(0);
-    setHasGenerated(true);
-    setAdvancedOpen(false);
-    setManifestStatus("Page structure generated. Export is ready.");
-    void persistSpec(nextSpec, "regenerate");
+    try {
+      if (!authToken) {
+        generateLocalFallback("Local mode: generated without AI persistence. Sign in to use streaming AI.");
+        return;
+      }
+
+      const seedSpec = createSpecFromBrief(systemBrief);
+      const project = await ensurePersistedProject(seedSpec);
+
+      if (!project) {
+        setGenerationState("error_retryable");
+        return;
+      }
+
+      await streamAiGeneration(project);
+    } catch (error) {
+      setGenerationState("error_retryable");
+      setManifestStatus(error instanceof Error ? error.message : "Generation failed.");
+    } finally {
+      setIsGenerating(false);
+    }
   }
 
   function importJson() {
@@ -679,7 +837,6 @@ export default function BuilderClient() {
       return;
     }
 
-    await acceptPersistedSections();
     await navigator.clipboard.writeText(JSON.stringify(manifestPreview, null, 2));
     setManifestStatus("Page manifest copied to clipboard.");
   }
@@ -690,7 +847,6 @@ export default function BuilderClient() {
       return;
     }
 
-    await acceptPersistedSections();
     const blob = new Blob([JSON.stringify(manifestPreview, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -700,6 +856,38 @@ export default function BuilderClient() {
     link.click();
     URL.revokeObjectURL(url);
     setManifestStatus("Selected page manifest downloaded locally.");
+  }
+
+  function handleSignOut() {
+    signOutSession();
+    setPersistedProject(null);
+    setBrandProfile(null);
+    setBackendStatus("Local mode: sign in to save projects and continue later.");
+  }
+
+  async function acceptCurrentProject() {
+    if (!authToken || !persistedProject) {
+      setManifestStatus("Sign in and generate a persisted project before accepting sections.");
+      return;
+    }
+
+    await Promise.all(
+      persistedProject.sections.map((section) =>
+        fetch(`/api/builder/sections/${section.id}`, {
+          method: "PATCH",
+          headers: authHeaders(),
+          body: JSON.stringify({
+            projectId: persistedProject.id,
+            sectionKey: section.section_key,
+            section: {},
+            accept: true,
+          }),
+        }),
+      ),
+    );
+    setManifestStatus("Sections accepted explicitly.");
+    setBackendStatus("Persisted sections marked as accepted.");
+    await loadPersistedProject(persistedProject.id);
   }
 
   return (
@@ -739,18 +927,31 @@ export default function BuilderClient() {
               <button
                 type="button"
                 onClick={generateSystem}
-                disabled={!systemBrief.trim() || !canAfford("builder-generation")}
+                disabled={!systemBrief.trim() || !canAfford("builder-generation") || isGenerating}
                 className="inline-flex h-14 w-full items-center justify-center rounded-full bg-white px-7 text-sm font-semibold uppercase tracking-[0.2em] text-black hover:bg-white/85 disabled:cursor-not-allowed disabled:bg-white/25 disabled:text-white/40"
               >
-                Generate Page ({costs["builder-generation"].estimatedCreditCost} credits)
+                {isGenerating
+                  ? "Generating..."
+                  : `Generate Page (${costs["builder-generation"].estimatedCreditCost} credits)`}
               </button>
               {disabledReason ? (
                 <p className="mt-3 text-xs leading-6 text-slate-500">{disabledReason}</p>
+              ) : null}
+              {isGenerating ? (
+                <p className="mt-3 text-xs leading-6 text-white/45">
+                  {generationStateCopy(generationState)}
+                </p>
               ) : null}
             </div>
           </div>
         </div>
       </div>
+
+      {streamingPreview ? (
+        <div className="mb-5 max-h-40 overflow-hidden border border-white/10 bg-black/25 p-5 text-xs leading-6 text-white/45">
+          {streamingPreview}
+        </div>
+      ) : null}
 
       {!canAfford("builder-generation") ? (
         <div className="mb-5">
@@ -762,7 +963,49 @@ export default function BuilderClient() {
       ) : null}
 
       <div className="mb-5 border border-white/10 bg-black/25 p-5 text-sm leading-7 text-white/55">
-        {backendStatus}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p>{backendStatus}</p>
+            {authToken ? (
+              brandProfile ? (
+                <p className="mt-2 text-white/45">
+                  Brand context: {brandProfile.brand_name}
+                  {brandProfile.tone ? ` / ${brandProfile.tone}` : ""}
+                </p>
+              ) : (
+                <p className="mt-2 text-white/45">
+                  Complete your Brand Profile to make outputs sharper and consistent.
+                </p>
+              )
+            ) : null}
+          </div>
+          {authToken ? (
+            <div className="flex shrink-0 flex-wrap gap-3">
+              {!brandProfile ? (
+                <Link
+                  href="/onboarding/brand-profile"
+                  className="inline-flex h-10 items-center justify-center rounded-full border border-white/15 px-4 text-xs font-semibold uppercase tracking-[0.16em] text-white hover:border-white/35"
+                >
+                  Brand Profile
+                </Link>
+              ) : null}
+              <button
+                type="button"
+                onClick={handleSignOut}
+                className="inline-flex h-10 items-center justify-center rounded-full border border-white/10 px-4 text-xs font-semibold uppercase tracking-[0.16em] text-white/55 hover:border-white/25 hover:text-white"
+              >
+                Logout
+              </button>
+            </div>
+          ) : (
+            <Link
+              href="/auth"
+              className="inline-flex h-10 shrink-0 items-center justify-center rounded-full bg-white px-4 text-xs font-semibold uppercase tracking-[0.16em] text-black hover:bg-white/85"
+            >
+              Sign In
+            </Link>
+          )}
+        </div>
       </div>
 
       {hasGenerated ? (
@@ -828,6 +1071,7 @@ export default function BuilderClient() {
               canExport={hasGenerated}
               onCopy={copyManifest}
               onDownload={downloadManifest}
+              onAccept={acceptCurrentProject}
             />
           </div>
         ) : null}
@@ -1256,12 +1500,14 @@ function ManifestPanel({
   canExport,
   onCopy,
   onDownload,
+  onAccept,
 }: {
   manifestStatus: string;
   manifestPreview: ExportManifest;
   canExport: boolean;
   onCopy: () => void;
   onDownload: () => void;
+  onAccept: () => void;
 }) {
   return (
     <div className="min-w-0 overflow-hidden border-t border-white/10 p-4 sm:p-6">
@@ -1287,6 +1533,14 @@ function ManifestPanel({
           className="bg-white px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-black transition hover:bg-white/85 disabled:cursor-not-allowed disabled:bg-white/25 disabled:text-white/40"
         >
           Download JSON
+        </button>
+        <button
+          type="button"
+          onClick={onAccept}
+          disabled={!canExport}
+          className="border border-white/15 px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-white transition hover:border-white/35 disabled:cursor-not-allowed disabled:border-white/10 disabled:text-white/35"
+        >
+          Accept Sections
         </button>
       </div>
       <p className="mt-4 text-xs text-white/45">{manifestStatus}</p>

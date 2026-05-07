@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import AuthProvider from "./account/auth-provider";
+import { UserMenu } from "./account/account-components";
 import {
   defaultDescription,
   defaultTitle,
@@ -75,25 +77,28 @@ export default function RootLayout({
             __html: JSON.stringify([websiteJsonLd, softwareJsonLd]),
           }}
         />
-        <header className="bg-[#030405] text-slate-100 py-4 px-6 backdrop-blur-lg z-50 fixed w-full">
-          <nav className="flex items-center justify-between max-w-6xl mx-auto">
-            <Link href="/" className="text-2xl font-semibold tracking-tight text-white">
-              EMOVEL
-            </Link>
-            <ul className="flex space-x-8">
-              <li><Link href="/" className="text-slate-400 hover:text-white">Home</Link></li>
-              <li><Link href="/ecosystem" className="text-slate-400 hover:text-white">Ecosystem</Link></li>
-              <li><Link href="/builder" className="text-slate-400 hover:text-white">Builder</Link></li>
-              <li><Link href="/assistants" className="text-slate-400 hover:text-white">Assistants</Link></li>
-              <li><Link href="/marketing-system" className="text-slate-400 hover:text-white">Marketing System</Link></li>
-              <li><Link href="/prompt-engine" className="text-slate-400 hover:text-white">Prompt Engine</Link></li>
-              <li><Link href="/docs" className="text-slate-400 hover:text-white">Docs</Link></li>
-            </ul>
-          </nav>
-        </header>
-        <main className="mt-[5rem] flex flex-col">
-          {children}
-        </main>
+        <AuthProvider>
+          <header className="bg-[#030405] text-slate-100 py-4 px-6 backdrop-blur-lg z-50 fixed w-full">
+            <nav className="flex items-center justify-between max-w-6xl mx-auto">
+              <Link href="/" className="text-2xl font-semibold tracking-tight text-white">
+                EMOVEL
+              </Link>
+              <ul className="flex space-x-8">
+                <li><Link href="/" className="text-slate-400 hover:text-white">Home</Link></li>
+                <li><Link href="/ecosystem" className="text-slate-400 hover:text-white">Ecosystem</Link></li>
+                <li><Link href="/builder" className="text-slate-400 hover:text-white">Builder</Link></li>
+                <li><Link href="/assistants" className="text-slate-400 hover:text-white">Assistants</Link></li>
+                <li><Link href="/marketing-system" className="text-slate-400 hover:text-white">Marketing System</Link></li>
+                <li><Link href="/prompt-engine" className="text-slate-400 hover:text-white">Prompt Engine</Link></li>
+                <li><Link href="/docs" className="text-slate-400 hover:text-white">Docs</Link></li>
+              </ul>
+              <UserMenu />
+            </nav>
+          </header>
+          <main className="mt-[5rem] flex flex-col">
+            {children}
+          </main>
+        </AuthProvider>
       </body>
     </html>
   );

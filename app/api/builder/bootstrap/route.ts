@@ -1,5 +1,6 @@
-import { getCurrentProfile, requireUser } from "../../../../lib/auth/session";
+import { requireAuth } from "../../../../lib/auth/session";
 import {
+  getCurrentProfile,
   getBrandProfile,
   getOrCreateUserWorkspace,
   getProjects,
@@ -7,7 +8,7 @@ import {
 
 export async function GET(request: Request) {
   try {
-    const { user, accessToken } = await requireUser(request);
+    const { user, accessToken } = await requireAuth(request);
     const context = {
       userId: user.id,
       accessToken,
@@ -19,7 +20,7 @@ export async function GET(request: Request) {
     }
 
     const [profile, brandProfile, projects] = await Promise.all([
-      getCurrentProfile(request),
+      getCurrentProfile(context),
       getBrandProfile(context, workspace.id),
       getProjects(context, workspace.id),
     ]);

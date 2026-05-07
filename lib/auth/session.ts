@@ -1,13 +1,20 @@
 import { getServerSupabaseConfig } from "../supabase/config";
 import {
   getCurrentProfile as readCurrentProfile,
+  getOnboardingStep as readOnboardingStep,
   getOrCreateUserWorkspace,
 } from "../emovel-ai/data-access";
+import { getPlanLimits } from "../billing/plan-limits";
 
 export interface AuthenticatedUser {
   id: string;
   email?: string;
   role?: string;
+}
+
+export interface AuthContext {
+  user: AuthenticatedUser;
+  accessToken: string;
 }
 
 export function getBearerToken(request: Request) {
@@ -49,6 +56,29 @@ export async function getUserFromAccessToken(accessToken: string) {
 }
 
 export async function requireUser(request: Request) {
+  return requireAuth(request);
+}
+
+export async function getCurrentUser(request: Request): Promise<AuthContext | null> {
+  const token = getBearerToken(request);
+
+  if (!token) {
+    return null;
+  }
+
+  const user = await getUserFromAccessToken(token);
+
+  if (!user) {
+    return null;
+  }
+
+  return {
+    user,
+    accessToken: token,
+  };
+}
+
+export async function requireAuth(request: Request): Promise<AuthContext> {
   const token = getBearerToken(request);
 
   if (!token) {
@@ -68,7 +98,7 @@ export async function requireUser(request: Request) {
 }
 
 export async function getCurrentProfile(request: Request) {
-  const { user, accessToken } = await requireUser(request);
+  const { user, accessToken } = await requireAuth(request);
 
   return readCurrentProfile({
     userId: user.id,
@@ -77,9 +107,32 @@ export async function getCurrentProfile(request: Request) {
 }
 
 export async function getCurrentWorkspace(request: Request) {
-  const { user, accessToken } = await requireUser(request);
+  return requireWorkspace(request);
+}
+
+export async function requireWorkspace(request: Request) {
+  const { user, accessToken } = await requireAuth(request);
 
   return getOrCreateUserWorkspace({
+    userId: user.id,
+    accessToken,
+  });
+}
+
+export async function getCurrentPlan(request: Request) {
+  const profile = await getCurrentProfile(request);
+
+  return profile?.plan || "free";
+}
+
+export async function getCurrentPlanLimits(request: Request) {
+  return getPlanLimits(await getCurrentPlan(request));
+}
+
+export async function getOnboardingStep(request: Request) {
+  const { user, accessToken } = await requireAuth(request);
+
+  return readOnboardingStep({
     userId: user.id,
     accessToken,
   });

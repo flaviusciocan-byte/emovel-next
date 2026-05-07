@@ -1,14 +1,15 @@
-import { requireUser } from "../../../../lib/auth/session";
+import { requireAuth } from "../../../../lib/auth/session";
 import {
   checkPlanLimit,
   createProject,
   getOrCreateUserWorkspace,
+  updateOnboardingStep,
 } from "../../../../lib/emovel-ai/data-access";
 import type { ProjectInput } from "../../../../lib/emovel-ai/types";
 
 export async function POST(request: Request) {
   try {
-    const { user, accessToken } = await requireUser(request);
+    const { user, accessToken } = await requireAuth(request);
     const context = {
       userId: user.id,
       accessToken,
@@ -27,6 +28,10 @@ export async function POST(request: Request) {
 
     const payload = (await request.json()) as ProjectInput;
     const project = await createProject(context, workspace.id, payload);
+
+    if (project) {
+      await updateOnboardingStep(context, "complete");
+    }
 
     return Response.json({ project, workspace });
   } catch (error) {

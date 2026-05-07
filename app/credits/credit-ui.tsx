@@ -3,6 +3,8 @@
 import { useState } from "react";
 import type { CreditAction } from "./types";
 import { CREDIT_COSTS } from "./credit-store";
+import { PlanBadge } from "../account/account-components";
+import { useAuthSession } from "../../lib/auth/use-auth-session";
 
 export function CreditDisplay({
   balance,
@@ -14,6 +16,7 @@ export function CreditDisplay({
   compact?: boolean;
 }) {
   const cost = CREDIT_COSTS[action];
+  const { authenticated, plan } = useAuthSession();
 
   return (
     <div
@@ -26,13 +29,17 @@ export function CreditDisplay({
       </p>
       <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
         <p className="text-2xl font-semibold text-white">{balance}</p>
-        <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
-          Cost: {cost.estimatedCreditCost}
-        </p>
+        <div className="flex items-center gap-2">
+          <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
+            Cost: {cost.estimatedCreditCost}
+          </p>
+          {authenticated ? <PlanBadge plan={plan} /> : null}
+        </div>
       </div>
       <div className="mt-3 border-t border-white/[0.08] pt-3 text-xs leading-5 text-slate-500">
         <p>Optimized model route: {cost.modelTier.charAt(0).toUpperCase() + cost.modelTier.slice(1)}</p>
         <p>Estimated cost: {cost.estimatedCreditCost} credits</p>
+        <p>{authenticated ? "Account plan loaded globally." : "Legacy local credits are active."}</p>
       </div>
     </div>
   );

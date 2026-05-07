@@ -1,4 +1,4 @@
-import { requireUser } from "../../../../../lib/auth/session";
+import { requireAuth } from "../../../../../lib/auth/session";
 import {
   getOrCreateUserWorkspace,
   getProjectWithSections,
@@ -10,7 +10,7 @@ export async function GET(
 ) {
   try {
     const { projectId } = await params;
-    const { user, accessToken } = await requireUser(request);
+    const { user, accessToken } = await requireAuth(request);
     const context = {
       userId: user.id,
       accessToken,

@@ -1,4 +1,4 @@
-import { requireUser } from "../../../../../lib/auth/session";
+import { requireAuth } from "../../../../../lib/auth/session";
 import {
   acceptSection,
   getOrCreateUserWorkspace,
@@ -24,7 +24,7 @@ export async function PATCH(
 ) {
   try {
     const { sectionId } = await params;
-    const { user, accessToken } = await requireUser(request);
+    const { user, accessToken } = await requireAuth(request);
     const context = {
       userId: user.id,
       accessToken,
