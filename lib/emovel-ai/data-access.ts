@@ -3,8 +3,12 @@ import { createServerSupabaseClient } from "../supabase/server";
 import { eq } from "../supabase/rest-client";
 import { V1_FIXED_SECTION_ORDER } from "./section-order";
 import type {
+  AiGeneration,
+  AiGenerationStatus,
+  AiRequestCategory,
   BrandProfile,
   BrandProfileInput,
+  OnboardingStep,
   PlanLimits,
   Profile,
   Project,
@@ -96,6 +100,26 @@ export async function getBrandProfile(context: UserDataContext, workspaceId: str
   return firstOrNull(rows);
 }
 
+export async function getOrCreateBrandProfile(
+  context: UserDataContext,
+  workspaceId: string,
+  input: Partial<BrandProfileInput> = {},
+) {
+  const existingProfile = await getBrandProfile(context, workspaceId);
+
+  if (existingProfile) {
+    return existingProfile;
+  }
+
+  return updateBrandProfile(context, workspaceId, {
+    brand_name: input.brand_name?.trim() || "Untitled Brand",
+    audience: input.audience || null,
+    tone: input.tone || null,
+    visual_direction: input.visual_direction || null,
+    offer_positioning: input.offer_positioning || null,
+  });
+}
+
 export async function updateBrandProfile(
   context: UserDataContext,
   workspaceId: string,
@@ -110,6 +134,31 @@ export async function updateBrandProfile(
   };
 
   const rows = await client.upsert<BrandProfile>("brand_profiles", payload, "user_id,workspace_id");
+
+  return firstOrNull(rows);
+}
+
+export async function getOnboardingStep(context: UserDataContext) {
+  const profile = await getCurrentProfile(context);
+
+  return profile?.onboarding_step || null;
+}
+
+export async function updateOnboardingStep(
+  context: UserDataContext,
+  onboardingStep: OnboardingStep,
+) {
+  const client = clientFor(context);
+  const rows = await client.update<Profile>(
+    "profiles",
+    {
+      id: eq(context.userId),
+    },
+    {
+      onboarding_step: onboardingStep,
+      updated_at: new Date().toISOString(),
+    },
+  );
 
   return firstOrNull(rows);
 }
@@ -199,6 +248,58 @@ export async function getProjectWithSections(
   };
 }
 
+export async function updateProjectSectionOrder(
+  context: UserDataContext,
+  workspaceId: string,
+  projectId: string,
+  fixedSectionOrder: string[],
+) {
+  const client = clientFor(context);
+  const rows = await client.update<Project>(
+    "projects",
+    {
+      id: eq(projectId),
+      user_id: eq(context.userId),
+      workspace_id: eq(workspaceId),
+    },
+    {
+      fixed_section_order: fixedSectionOrder,
+      updated_at: new Date().toISOString(),
+    },
+  );
+
+  return firstOrNull(rows);
+}
+
+export async function insertSection(
+  context: UserDataContext,
+  workspaceId: string,
+  input: {
+    projectId: string;
+    sectionKey: string;
+    position: number;
+    title?: string | null;
+    content?: Record<string, unknown>;
+    status?: SectionRecord["status"];
+    errorMessage?: string | null;
+  },
+) {
+  const client = clientFor(context);
+  const rows = await client.insert<SectionRecord>("sections", {
+    user_id: context.userId,
+    workspace_id: workspaceId,
+    project_id: input.projectId,
+    section_key: input.sectionKey,
+    position: input.position,
+    title: input.title || null,
+    content: input.content || {},
+    status: input.status || "empty",
+    error_message: input.errorMessage || null,
+  });
+
+  return firstOrNull(rows);
+}
+
 export async function updateSection(
   context: UserDataContext,
   workspaceId: string,
@@ -276,6 +377,79 @@ export async function getUsage(
   });
 
   return firstOrNull(rows);
+}
+
+export function getCurrentUsagePeriod(now = new Date()) {
+  const periodStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  const periodEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+
+  return {
+    periodStart: periodStart.toISOString().slice(0, 10),
+    periodEnd: periodEnd.toISOString().slice(0, 10),
+  };
+}
+
+export async function recordAiGeneration(
+  context: UserDataContext,
+  workspaceId: string,
+  input: {
+    projectId?: string | null;
+    sectionId?: string | null;
+    requestCategory: AiRequestCategory;
+    provider: string;
+    modelKey: string;
+    promptTokens?: number;
+    completionTokens?: number;
+    estimatedCostCents?: number;
+    status: AiGenerationStatus;
+    errorMessage?: string | null;
+  },
+) {
+  const client = clientFor(context);
+  const rows = await client.insert<AiGeneration>("ai_generations", {
+    user_id: context.userId,
+    workspace_id: workspaceId,
+    project_id: input.projectId || null,
+    section_id: input.sectionId || null,
+    request_category: input.requestCategory,
+    provider: input.provider,
+    model_key: input.modelKey,
+    prompt_tokens: input.promptTokens || 0,
+    completion_tokens: input.completionTokens || 0,
+    estimated_cost_cents: input.estimatedCostCents || 0,
+    status: input.status,
+    error_message: input.errorMessage || null,
+  });
+
+  return firstOrNull(rows);
+}
+
+export async function incrementUsageCounter(
+  context: UserDataContext,
+  workspaceId: string,
+  input: {
+    aiGenerations?: number;
+    sectionsGenerated?: number;
+    tokensUsed?: number;
+    estimatedCostCents?: number;
+  },
+) {
+  const client = clientFor(context);
+  const { periodStart, periodEnd } = getCurrentUsagePeriod();
+  const row = await client.request<UsageCounter>("/rest/v1/rpc/increment_usage_counter", {
+    method: "POST",
+    body: JSON.stringify({
+      target_workspace_id: workspaceId,
+      target_period_start: periodStart,
+      target_period_end: periodEnd,
+      ai_generations_delta: input.aiGenerations || 0,
+      sections_generated_delta: input.sectionsGenerated || 0,
+      tokens_used_delta: input.tokensUsed || 0,
+      estimated_cost_cents_delta: input.estimatedCostCents || 0,
+    }),
+  });
+
+  return row;
 }
 
 export async function checkPlanLimit(

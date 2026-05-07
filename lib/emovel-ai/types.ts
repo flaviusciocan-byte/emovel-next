@@ -5,12 +5,21 @@ export type WorkspaceKind = "personal";
 export type OnboardingStep =
   | "brand_profile"
   | "first_project"
-  | "first_section"
   | "complete";
 
 export type ProjectStatus = "draft" | "active" | "archived";
 
-export type SectionStatus = "empty" | "generating" | "ready" | "accepted" | "error";
+export type SectionStatus =
+  | "empty"
+  | "generating"
+  | "streaming_partial"
+  | "ready"
+  | "accepted"
+  | "error"
+  | "error_retryable"
+  | "error_blocked"
+  | "error_billing"
+  | "error_rate_limited";
 
 export type SectionDraftSource = "ai" | "manual" | "regenerate";
 
@@ -18,12 +27,17 @@ export type ProjectMemoryType = "basic" | "advanced";
 
 export type AiRequestCategory =
   | "production"
-  | "code_ui"
+  | "commercial_ui"
   | "monetization"
   | "brand"
   | "client_deliverable"
   | "ambiguous"
-  | "blocked_general_knowledge";
+  | "general_knowledge"
+  | "entertainment"
+  | "news"
+  | "medical_legal_financial_advice"
+  | "unrelated_coding_assistant_behavior"
+  | "trivia_history_science";
 
 export type AiGenerationStatus = "streaming" | "completed" | "failed" | "blocked";
 
@@ -133,6 +147,23 @@ export interface UsageCounter {
   estimated_cost_cents: number;
   created_at: string;
   updated_at: string;
+}
+
+export interface AiGeneration {
+  id: string;
+  user_id: string;
+  workspace_id: string;
+  project_id: string | null;
+  section_id: string | null;
+  request_category: AiRequestCategory;
+  provider: string;
+  model_key: string;
+  prompt_tokens: number;
+  completion_tokens: number;
+  estimated_cost_cents: number;
+  status: AiGenerationStatus;
+  error_message: string | null;
+  created_at: string;
 }
 
 export interface PlanLimits {
