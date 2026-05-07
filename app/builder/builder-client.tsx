@@ -86,6 +86,17 @@ interface AiGenerateEvent {
   error?: string;
 }
 
+interface BuilderExportResponse {
+  content: string;
+  fileName: string;
+  contentType: string;
+  sectionCount: number;
+  acceptedSectionCount: number;
+  readySectionCount: number;
+  warnings: string[];
+  usedReadyFallback: boolean;
+}
+
 function textFieldClass() {
   return "w-full border border-white/10 bg-black/35 px-4 py-3 text-sm text-white outline-none transition focus:border-white/35";
 }
@@ -298,9 +309,18 @@ export default function BuilderClient() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationState, setGenerationState] = useState<BuilderGenerationState>("empty");
   const [streamingPreview, setStreamingPreview] = useState("");
+  const [exportStatus, setExportStatus] = useState("Accept sections before exporting the final project file.");
 
   const validation = useMemo(() => validateTemplateSpecV1(spec), [spec]);
   const manifestPreview = useMemo(() => createManifest(spec, validation), [spec, validation]);
+  const exportCounts = useMemo(() => {
+    const sections = persistedProject?.sections || [];
+
+    return {
+      accepted: sections.filter((section) => section.status === "accepted").length,
+      ready: sections.filter((section) => section.status === "ready").length,
+    };
+  }, [persistedProject]);
   const localCreditBlocked = !authToken && !canAfford("builder-generation");
   const disabledReason = !systemBrief.trim()
     ? "Enter a page brief to generate the preview."
@@ -862,6 +882,66 @@ export default function BuilderClient() {
     setManifestStatus("Selected page manifest downloaded locally.");
   }
 
+  async function requestProjectExport(format: "markdown" | "txt") {
+    if (!authToken || !persistedProject) {
+      setExportStatus("Sign in and generate a persisted project before exporting Markdown or TXT.");
+      return null;
+    }
+
+    const response = await fetch(`/api/exports/${format}`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({
+        projectId: persistedProject.id,
+      }),
+    });
+
+    const data = (await response.json().catch(() => null)) as
+      | (Partial<BuilderExportResponse> & { error?: string })
+      | null;
+
+    if (!response.ok || !data?.content || !data.fileName || !data.contentType) {
+      setExportStatus(data?.error || "Project export failed.");
+      return null;
+    }
+
+    const warningCopy = data.warnings?.length ? ` ${data.warnings.join(" ")}` : "";
+    setExportStatus(
+      `${format === "markdown" ? "Markdown" : "TXT"} export assembled with ${data.sectionCount} section(s).${warningCopy}`,
+    );
+
+    return data as BuilderExportResponse;
+  }
+
+  async function copyProjectExport(format: "markdown" | "txt") {
+    const data = await requestProjectExport(format);
+
+    if (!data) {
+      return;
+    }
+
+    await navigator.clipboard.writeText(data.content);
+    setExportStatus(`${format === "markdown" ? "Markdown" : "TXT"} export copied to clipboard.`);
+  }
+
+  async function downloadProjectExport(format: "markdown" | "txt") {
+    const data = await requestProjectExport(format);
+
+    if (!data) {
+      return;
+    }
+
+    const blob = new Blob([data.content], { type: data.contentType });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = data.fileName;
+    link.click();
+    URL.revokeObjectURL(url);
+    setExportStatus(`${data.fileName} downloaded locally.`);
+  }
+
   function handleSignOut() {
     signOutSession();
     setPersistedProject(null);
@@ -1016,6 +1096,17 @@ export default function BuilderClient() {
         <div className="space-y-5">
           <CommercialSummary spec={spec} validation={validation} />
           <PreviewPanel spec={spec} manifest={manifestPreview} />
+          <ExportPanel
+            projectName={persistedProject?.name || spec.templateName}
+            acceptedSectionCount={exportCounts.accepted}
+            readySectionCount={exportCounts.ready}
+            status={exportStatus}
+            canExport={Boolean(authToken && persistedProject)}
+            onCopyMarkdown={() => copyProjectExport("markdown")}
+            onDownloadMarkdown={() => downloadProjectExport("markdown")}
+            onCopyTxt={() => copyProjectExport("txt")}
+            onDownloadTxt={() => downloadProjectExport("txt")}
+          />
         </div>
       ) : (
         <div className="border border-white/10 bg-black/25 p-8 text-sm leading-7 text-white/50">
@@ -1494,6 +1585,90 @@ function PreviewPanel({
       <div className="mt-6">
         <RuntimePreview manifest={manifest} />
       </div>
+    </div>
+  );
+}
+
+function ExportPanel({
+  projectName,
+  acceptedSectionCount,
+  readySectionCount,
+  status,
+  canExport,
+  onCopyMarkdown,
+  onDownloadMarkdown,
+  onCopyTxt,
+  onDownloadTxt,
+}: {
+  projectName: string;
+  acceptedSectionCount: number;
+  readySectionCount: number;
+  status: string;
+  canExport: boolean;
+  onCopyMarkdown: () => void;
+  onDownloadMarkdown: () => void;
+  onCopyTxt: () => void;
+  onDownloadTxt: () => void;
+}) {
+  const fallbackWarning = acceptedSectionCount === 0 && readySectionCount > 0;
+
+  return (
+    <div className="border border-white/10 bg-black/25 p-6">
+      <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <p className={labelClass()}>Export Center</p>
+          <h3 className="mt-3 text-xl font-semibold text-white">{projectName}</h3>
+          <div className="mt-4 grid gap-2 text-sm leading-6 text-white/55">
+            <p>Accepted sections: {acceptedSectionCount}</p>
+            <p>Ready sections: {readySectionCount}</p>
+            {fallbackWarning ? (
+              <p className="text-amber-100">
+                No accepted sections yet. Export will include ready sections with a warning.
+              </p>
+            ) : null}
+            {!canExport ? (
+              <p className="text-white/40">
+                Sign in and generate a persisted project to export Markdown or TXT.
+              </p>
+            ) : null}
+          </div>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:min-w-96">
+          <button
+            type="button"
+            onClick={onCopyMarkdown}
+            disabled={!canExport}
+            className="border border-white/15 px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-white transition hover:border-white/35 disabled:cursor-not-allowed disabled:border-white/10 disabled:text-white/35"
+          >
+            Copy Markdown
+          </button>
+          <button
+            type="button"
+            onClick={onDownloadMarkdown}
+            disabled={!canExport}
+            className="bg-white px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-black transition hover:bg-white/85 disabled:cursor-not-allowed disabled:bg-white/25 disabled:text-white/40"
+          >
+            Download Markdown
+          </button>
+          <button
+            type="button"
+            onClick={onCopyTxt}
+            disabled={!canExport}
+            className="border border-white/15 px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-white transition hover:border-white/35 disabled:cursor-not-allowed disabled:border-white/10 disabled:text-white/35"
+          >
+            Copy TXT
+          </button>
+          <button
+            type="button"
+            onClick={onDownloadTxt}
+            disabled={!canExport}
+            className="border border-white/15 px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-white transition hover:border-white/35 disabled:cursor-not-allowed disabled:border-white/10 disabled:text-white/35"
+          >
+            Download TXT
+          </button>
+        </div>
+      </div>
+      <p className="mt-4 text-xs leading-6 text-white/45">{status}</p>
     </div>
   );
 }

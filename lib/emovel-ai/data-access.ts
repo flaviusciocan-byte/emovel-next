@@ -8,6 +8,8 @@ import type {
   AiRequestCategory,
   BrandProfile,
   BrandProfileInput,
+  ExportFormat,
+  ExportRecord,
   OnboardingStep,
   PlanLimits,
   Profile,
@@ -419,6 +421,29 @@ export async function recordAiGeneration(
     estimated_cost_cents: input.estimatedCostCents || 0,
     status: input.status,
     error_message: input.errorMessage || null,
+  });
+
+  return firstOrNull(rows);
+}
+
+export async function recordExport(
+  context: UserDataContext,
+  workspaceId: string,
+  input: {
+    projectId: string;
+    format: ExportFormat;
+    storagePath?: string | null;
+    contentHash?: string | null;
+  },
+) {
+  const client = clientFor(context);
+  const rows = await client.insert<ExportRecord>("exports", {
+    user_id: context.userId,
+    workspace_id: workspaceId,
+    project_id: input.projectId,
+    format: input.format,
+    storage_path: input.storagePath || null,
+    content_hash: input.contentHash || null,
   });
 
   return firstOrNull(rows);

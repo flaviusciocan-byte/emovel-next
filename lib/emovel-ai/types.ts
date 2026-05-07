@@ -41,6 +41,8 @@ export type AiRequestCategory =
 
 export type AiGenerationStatus = "streaming" | "completed" | "failed" | "blocked";
 
+export type ExportFormat = "markdown" | "txt" | "pdf";
+
 export interface Profile {
   id: string;
   email: string | null;
@@ -163,6 +165,17 @@ export interface AiGeneration {
   estimated_cost_cents: number;
   status: AiGenerationStatus;
   error_message: string | null;
+  created_at: string;
+}
+
+export interface ExportRecord {
+  id: string;
+  user_id: string;
+  workspace_id: string;
+  project_id: string;
+  format: ExportFormat;
+  storage_path: string | null;
+  content_hash: string | null;
   created_at: string;
 }
 
