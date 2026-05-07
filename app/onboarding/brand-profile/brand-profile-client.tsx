@@ -117,6 +117,30 @@ export default function BrandProfileClient() {
     }
   }
 
+  if (!loading && !token) {
+    return (
+      <section className="mx-auto grid w-full max-w-6xl gap-8 lg:grid-cols-[0.85fr_1.15fr]">
+        <div className="pt-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.34em] text-white/40">
+            Brand Profile
+          </p>
+          <h1 className="mt-5 text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+            Sign in to continue.
+          </h1>
+          <p className="mt-5 max-w-xl text-sm leading-7 text-white/55">
+            Brand Profile is connected to your EMOVEL workspace and requires an authenticated session.
+          </p>
+          <Link
+            href="/auth"
+            className="mt-8 inline-flex h-12 items-center justify-center rounded-full bg-white px-6 text-xs font-semibold uppercase tracking-[0.18em] text-black hover:bg-white/85"
+          >
+            Sign In
+          </Link>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="mx-auto grid w-full max-w-6xl gap-8 lg:grid-cols-[0.85fr_1.15fr]">
       <div className="pt-4">
@@ -130,14 +154,6 @@ export default function BrandProfileClient() {
           This is the first persistent layer for EMOVEL AI V1: audience, tone, visual
           direction, and offer positioning connected to your personal workspace.
         </p>
-        {!loading && !token ? (
-          <Link
-            href="/auth"
-            className="mt-8 inline-flex h-12 items-center justify-center rounded-full bg-white px-6 text-xs font-semibold uppercase tracking-[0.18em] text-black hover:bg-white/85"
-          >
-            Sign In
-          </Link>
-        ) : null}
       </div>
 
       <div className="border border-white/10 bg-white/[0.035] p-6 sm:p-8">

@@ -38,3 +38,37 @@ export function getStoredSupabaseAccessToken() {
 
   return null;
 }
+
+export function getStoredSupabaseRefreshToken() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  return window.localStorage.getItem("emovel-supabase-refresh-token");
+}
+
+export function storeSupabaseSession(session: {
+  access_token?: string;
+  refresh_token?: string;
+}) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  if (session.access_token) {
+    window.localStorage.setItem("emovel-supabase-access-token", session.access_token);
+  }
+
+  if (session.refresh_token) {
+    window.localStorage.setItem("emovel-supabase-refresh-token", session.refresh_token);
+  }
+}
+
+export function clearStoredSupabaseSession() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.removeItem("emovel-supabase-access-token");
+  window.localStorage.removeItem("emovel-supabase-refresh-token");
+}

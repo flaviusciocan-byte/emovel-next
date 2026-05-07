@@ -84,6 +84,8 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
       const data = (await response.json()) as AccountSessionResponse;
       setSession(data);
     } catch {
+      signOutBrowserSession();
+      setToken(null);
       setSession(localSession);
     } finally {
       setLoading(false);
@@ -91,7 +93,11 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    void refresh();
+    const timeoutId = window.setTimeout(() => {
+      void refresh();
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, [refresh]);
 
   const signOut = useCallback(() => {
