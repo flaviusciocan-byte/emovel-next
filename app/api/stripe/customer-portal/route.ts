@@ -50,8 +50,8 @@ export async function POST(request: Request) {
 
     if (!subscription?.stripe_customer_id) {
       return billingError({
-        status: 400,
-        category: "invalid_request",
+        status: 404,
+        category: "not_found",
         code: "STRIPE_CUSTOMER_REQUIRED",
         message: "No Stripe customer exists for this account.",
       });

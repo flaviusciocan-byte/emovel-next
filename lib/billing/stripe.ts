@@ -8,6 +8,7 @@ export type BillingErrorCategory =
   | "config_error"
   | "stripe_error"
   | "webhook_error"
+  | "not_found"
   | "internal_error";
 
 export function billingError(input: {

@@ -80,4 +80,47 @@ describe("account session route", () => {
     expect(data.subscription.stripe_customer_id).toBe("cus_123");
     expect(data.planLimits.canExportPdf).toBe(true);
   });
+
+  it("returns downgraded Free plan and locked PDF limit after cancellation sync", async () => {
+    mocks.getCurrentProfile.mockResolvedValue({
+      id: "user-1",
+      email: "founder@emovel.test",
+      full_name: null,
+      plan: "free",
+      onboarding_step: "complete",
+      created_at: "2026-05-07T00:00:00.000Z",
+      updated_at: "2026-05-07T00:00:00.000Z",
+    });
+    mocks.getUserSubscription.mockResolvedValue({
+      id: "subscription-1",
+      user_id: "user-1",
+      plan: "free",
+      stripe_customer_id: "cus_123",
+      stripe_subscription_id: "sub_123",
+      status: "canceled",
+      current_period_end: "2026-06-01T00:00:00.000Z",
+      created_at: "2026-05-07T00:00:00.000Z",
+      updated_at: "2026-05-07T00:00:00.000Z",
+    });
+    mocks.getCurrentPlanLimits.mockResolvedValue({
+      plan: "free",
+      canExportPdf: false,
+      maxProjects: 1,
+      monthlyAiGenerations: 20,
+      canCopySections: true,
+      memory: { basic: true, advanced: false },
+    });
+
+    const response = await accountSessionGet(
+      new Request("https://emovel.test/api/account/session", {
+        headers: { authorization: "Bearer test-token" },
+      }),
+    );
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.plan).toBe("free");
+    expect(data.subscription.status).toBe("canceled");
+    expect(data.planLimits.canExportPdf).toBe(false);
+  });
 });

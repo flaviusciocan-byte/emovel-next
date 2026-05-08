@@ -109,6 +109,7 @@ describe("Stripe checkout route", () => {
         client_reference_id: "user-1",
         line_items: [{ price: "price_pro_123", quantity: 1 }],
         success_url: "https://emovel.test/builder?billing=success",
+        cancel_url: "https://emovel.test/billing?billing=cancelled",
       }),
     );
   });

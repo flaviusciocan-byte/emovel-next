@@ -24,7 +24,7 @@ function billingErrorCopy(data?: BillingResponse | null) {
 
 export default function BillingClient() {
   const { authenticated, loading, token, plan, subscription, refresh } = useAuthSession();
-  const [status, setStatus] = useState("Choose the billing action that matches your account state.");
+  const [status, setStatus] = useState("Plan updates may take a moment after Stripe confirms payment.");
   const [busy, setBusy] = useState(false);
 
   async function requestBillingUrl(endpoint: "/api/stripe/checkout" | "/api/stripe/customer-portal") {
@@ -84,6 +84,8 @@ export default function BillingClient() {
     );
   }
 
+  const visiblePlan = plan === "pro" || plan === "free" ? plan : "free";
+
   return (
     <section className="min-h-[70vh] bg-[#030405] px-6 py-24 text-white">
       <div className="mx-auto max-w-4xl">
@@ -92,11 +94,11 @@ export default function BillingClient() {
         <div className="mt-10 grid gap-5 border border-white/10 bg-black/25 p-8">
           <div>
             <p className="text-xs uppercase tracking-[0.22em] text-white/45">Current Plan</p>
-            <p className="mt-3 text-3xl font-semibold">{plan === "pro" ? "Pro" : "Free"}</p>
+            <p className="mt-3 text-3xl font-semibold">{visiblePlan === "pro" ? "Pro" : "Free"}</p>
             <p className="mt-3 text-sm leading-7 text-white/55">
-              {plan === "pro"
+              {visiblePlan === "pro"
                 ? "PDF export is unlocked for persisted Builder projects."
-                : "Upgrade to Pro to unlock private PDF export."}
+                : "Upgrade to Pro to unlock private PDF export. After checkout, plan updates may take a moment."}
             </p>
           </div>
           {subscription ? (
