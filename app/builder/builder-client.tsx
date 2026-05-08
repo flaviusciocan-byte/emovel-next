@@ -105,6 +105,12 @@ interface BuilderPdfExportResponse {
   warnings: string[];
 }
 
+interface BuilderExportErrorResponse {
+  error?: string;
+  code?: string;
+  category?: string;
+}
+
 function textFieldClass() {
   return "w-full border border-white/10 bg-black/35 px-4 py-3 text-sm text-white outline-none transition focus:border-white/35";
 }
@@ -290,6 +296,25 @@ function generationStateCopy(state: BuilderGenerationState) {
   };
 
   return map[state];
+}
+
+function pdfExportErrorCopy(error?: BuilderExportErrorResponse | null) {
+  if (!error) {
+    return "PDF export failed. Try again or contact support if the issue continues.";
+  }
+
+  const map: Record<string, string> = {
+    AUTH_REQUIRED: "Sign in and generate a persisted project before exporting PDF.",
+    PROJECT_REQUIRED: "Generate or load a persisted project before exporting PDF.",
+    PROJECT_NOT_FOUND: "This project is unavailable for PDF export.",
+    PDF_EXPORT_REQUIRES_PRO: "PDF export requires Pro. Markdown and TXT remain available.",
+    PDF_GENERATION_FAILED: "PDF generation failed. Try again after reviewing the project sections.",
+    PDF_STORAGE_FAILED: "PDF storage failed. The file was not saved to private storage.",
+    PDF_SIGNED_URL_FAILED: "PDF signed URL creation failed. Try again to request a new private link.",
+    PDF_EXPORT_RECORD_FAILED: "PDF export history could not be recorded. Try again before sharing the export.",
+  };
+
+  return (error.code ? map[error.code] : null) || error.error || "PDF export failed.";
 }
 
 function isTemplateSpecSnapshot(value: unknown): value is TemplateSpecV1 {
@@ -969,11 +994,11 @@ export default function BuilderClient() {
       }),
     });
     const data = (await response.json().catch(() => null)) as
-      | (Partial<BuilderPdfExportResponse> & { error?: string })
+      | (Partial<BuilderPdfExportResponse> & BuilderExportErrorResponse)
       | null;
 
     if (!response.ok || !data?.signedUrl || !data.fileName) {
-      setExportStatus(data?.error || "PDF export failed.");
+      setExportStatus(pdfExportErrorCopy(data));
       return;
     }
 
