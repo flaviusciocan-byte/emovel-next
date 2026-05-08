@@ -11,7 +11,7 @@ import {
 } from "react";
 import { signOutBrowserSession } from "./browser-auth";
 import { getStoredSupabaseAccessToken } from "./browser-session";
-import type { PlanLimits, Profile, UserPlan, Workspace } from "../emovel-ai/types";
+import type { PlanLimits, Profile, SubscriptionRecord, UserPlan, Workspace } from "../emovel-ai/types";
 
 interface CurrentUser {
   id: string;
@@ -24,6 +24,7 @@ interface AccountSessionResponse {
   user: CurrentUser | null;
   profile: Profile | null;
   workspace: Workspace | null;
+  subscription: SubscriptionRecord | null;
   plan: UserPlan;
   onboardingStep: Profile["onboarding_step"] | null;
   planLimits: PlanLimits | null;
@@ -42,6 +43,7 @@ const localSession: AccountSessionResponse = {
   user: null,
   profile: null,
   workspace: null,
+  subscription: null,
   plan: "free",
   onboardingStep: null,
   planLimits: null,

@@ -5,6 +5,7 @@ import {
 import {
   getCurrentProfile,
   getOrCreateUserWorkspace,
+  getUserSubscription,
 } from "../../../../lib/emovel-ai/data-access";
 
 export async function GET(request: Request) {
@@ -17,6 +18,7 @@ export async function GET(request: Request) {
         user: null,
         profile: null,
         workspace: null,
+        subscription: null,
         plan: "free",
         onboardingStep: null,
         planLimits: null,
@@ -27,9 +29,10 @@ export async function GET(request: Request) {
       userId: auth.user.id,
       accessToken: auth.accessToken,
     };
-    const [profile, workspace, planLimits] = await Promise.all([
+    const [profile, workspace, subscription, planLimits] = await Promise.all([
       getCurrentProfile(context),
       getOrCreateUserWorkspace(context),
+      getUserSubscription(context),
       getCurrentPlanLimits(request),
     ]);
 
@@ -38,6 +41,7 @@ export async function GET(request: Request) {
       user: auth.user,
       profile,
       workspace,
+      subscription,
       plan: profile?.plan || "free",
       onboardingStep: profile?.onboarding_step || null,
       planLimits,

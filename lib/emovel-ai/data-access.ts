@@ -21,6 +21,9 @@ import type {
   SectionInput,
   SectionRecord,
   UsageCounter,
+  StripeEventRecord,
+  SubscriptionRecord,
+  UserPlan,
   Workspace,
 } from "./types";
 
@@ -469,6 +472,135 @@ export async function recordPdfExport(
     storage_path: input.storagePath,
     signed_url_expires_at: input.signedUrlExpiresAt,
   });
+
+  return firstOrNull(rows);
+}
+
+export async function getUserSubscription(context: UserDataContext) {
+  const client = clientFor(context);
+  const rows = await client.select<SubscriptionRecord>("subscriptions", {
+    query: {
+      user_id: eq(context.userId),
+      limit: 1,
+    },
+  });
+
+  return firstOrNull(rows);
+}
+
+export async function getServiceSubscriptionByCustomer(stripeCustomerId: string) {
+  const client = createServiceSupabaseClient();
+  const rows = await client.select<SubscriptionRecord>("subscriptions", {
+    query: {
+      stripe_customer_id: eq(stripeCustomerId),
+      limit: 1,
+    },
+  });
+
+  return firstOrNull(rows);
+}
+
+export async function getServiceStripeEvent(eventId: string) {
+  const client = createServiceSupabaseClient();
+  const rows = await client.select<StripeEventRecord>("stripe_events", {
+    query: {
+      id: eq(eventId),
+      limit: 1,
+    },
+  });
+
+  return firstOrNull(rows);
+}
+
+export async function recordServiceStripeEvent(input: {
+  id: string;
+  eventType: string;
+  payload: Record<string, unknown>;
+}) {
+  const client = createServiceSupabaseClient();
+  const rows = await client.insert<StripeEventRecord>("stripe_events", {
+    id: input.id,
+    event_type: input.eventType,
+    processed: false,
+    payload: input.payload,
+  });
+
+  return firstOrNull(rows);
+}
+
+export async function markServiceStripeEventProcessed(eventId: string) {
+  const client = createServiceSupabaseClient();
+  const rows = await client.update<StripeEventRecord>(
+    "stripe_events",
+    {
+      id: eq(eventId),
+    },
+    {
+      processed: true,
+      processed_at: new Date().toISOString(),
+    },
+  );
+
+  return firstOrNull(rows);
+}
+
+export async function upsertServiceSubscription(input: {
+  userId: string;
+  plan: UserPlan;
+  status: string;
+  stripeCustomerId: string;
+  stripeSubscriptionId?: string | null;
+  currentPeriodEnd?: string | null;
+}) {
+  const client = createServiceSupabaseClient();
+  const existingRows = await client.select<SubscriptionRecord>("subscriptions", {
+    query: {
+      user_id: eq(input.userId),
+      limit: 1,
+    },
+  });
+  const existing = firstOrNull(existingRows);
+  const payload = {
+    plan: input.plan,
+    stripe_customer_id: input.stripeCustomerId,
+    stripe_subscription_id: input.stripeSubscriptionId || null,
+    status: input.status,
+    current_period_end: input.currentPeriodEnd || null,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (existing) {
+    const rows = await client.update<SubscriptionRecord>(
+      "subscriptions",
+      {
+        id: eq(existing.id),
+      },
+      payload,
+    );
+
+    return firstOrNull(rows);
+  }
+
+  const rows = await client.insert<SubscriptionRecord>("subscriptions", {
+    ...payload,
+    user_id: input.userId,
+  });
+
+  return firstOrNull(rows);
+}
+
+export async function updateServiceProfilePlan(userId: string, plan: UserPlan) {
+  const client = createServiceSupabaseClient();
+  const rows = await client.update<Profile>(
+    "profiles",
+    {
+      id: eq(userId),
+    },
+    {
+      plan,
+      updated_at: new Date().toISOString(),
+    },
+  );
 
   return firstOrNull(rows);
 }

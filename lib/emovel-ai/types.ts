@@ -189,6 +189,27 @@ export interface PdfExportRecord {
   created_at: string;
 }
 
+export interface SubscriptionRecord {
+  id: string;
+  user_id: string;
+  plan: UserPlan;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
+  status: string;
+  current_period_end: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StripeEventRecord {
+  id: string;
+  event_type: string;
+  processed: boolean;
+  payload: Record<string, unknown>;
+  created_at: string;
+  processed_at: string | null;
+}
+
 export interface PlanLimits {
   plan: UserPlan;
   maxProjects: number | null;
