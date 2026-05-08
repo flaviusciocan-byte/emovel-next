@@ -35,35 +35,65 @@ const systemShifts = [
 
 const pricingPlans = [
   {
-    name: "Starter",
-    credits: "250 credits",
-    price: "For early product validation",
+    name: "Entry",
+    credits: "300 credits / month",
+    price: "$149 / month",
     description:
-      "Build first systems, test prompt logic, and generate focused execution assets.",
-    features: ["Prompt Engine access", "Spec Builder exports", "Local campaign drafts"],
+      "For founders validating one product line with controlled execution and clear commercial outputs.",
+    features: [
+      "Includes Core Orchestrator + Prompt Engine",
+      "Includes 300 monthly credits",
+      "Overage credits: $0.50 / credit",
+      "Best for 10-20 core generations / month",
+    ],
   },
   {
-    name: "Pro",
-    credits: "1,000 credits",
-    price: "For active operators",
+    name: "Professional",
+    credits: "1,200 credits / month",
+    price: "$499 / month",
     description:
-      "Run product, marketing, and builder workflows with higher output volume.",
-    features: ["Social Pack generation", "Assistant orchestration", "Priority system workflows"],
+      "For operators running weekly launches across prompt, marketing, and build cycles.",
+    features: [
+      "Includes all Entry capabilities",
+      "Includes Marketing Output System workflows",
+      "Includes 1,200 monthly credits",
+      "Overage credits: $0.42 / credit",
+    ],
   },
   {
-    name: "System",
-    credits: "3,000 credits",
-    price: "For commercial execution",
+    name: "Premium",
+    credits: "4,000 credits / month",
+    price: "$1,490 / month",
     description:
-      "Operate EMOVEL as a repeatable digital product production layer.",
-    features: ["Full ecosystem usage", "Advanced image preparation", "Founder-grade output memory"],
+      "For teams treating EMOVEL as an execution operating layer for monetizable assets.",
+    features: [
+      "Includes full ecosystem + Builder priority",
+      "Includes 4,000 monthly credits",
+      "Overage credits: $0.36 / credit",
+      "Priority support and execution routing",
+    ],
   },
 ];
 
 const creditPacks = [
-  { name: "Focus Pack", credits: "100 credits", use: "For single-session generation" },
-  { name: "Launch Pack", credits: "500 credits", use: "For product and campaign work" },
-  { name: "Scale Pack", credits: "2,000 credits", use: "For recurring system execution" },
+  { name: "Precision Refill", credits: "200 credits", price: "$110", use: "$0.55 / credit. For short bursts without plan changes." },
+  { name: "Growth Refill", credits: "800 credits", price: "$400", use: "$0.50 / credit. For launch cycles and campaign sprints." },
+  { name: "Scale Refill", credits: "2,500 credits", price: "$1,050", use: "$0.42 / credit. For recurring high-volume execution." },
+];
+
+const actionValueMap = [
+  { action: "Prompt Engine package", value: "10 credits", logic: "Strategic prompt architecture and reusable execution logic." },
+  { action: "Marketing Social Pack", value: "12 credits", logic: "Multi-platform conversion copy set with aligned offer framing." },
+  { action: "Builder system generation", value: "15 credits", logic: "System blueprint + execution scaffolding for monetizable delivery." },
+  { action: "Core Orchestrator run", value: "10 credits", logic: "Cross-module orchestration to keep execution consistent." },
+];
+
+const creditLogic = [
+  "Subscription credits renew monthly and roll over for 60 days.",
+  "Usage always consumes subscription credits first, then refill credits.",
+  "When balance drops below 15%, one-click refill keeps workflows uninterrupted.",
+  "Upgrades apply instantly with prorated credit top-up to remove waiting friction.",
+  "Downgrades schedule at next billing cycle to protect active production capacity.",
 ];
 
 export default function Home() {
@@ -182,7 +212,7 @@ export default function Home() {
                 Credits turn EMOVEL into a controlled production system.
               </h2>
               <p className="mt-8 max-w-2xl text-lg leading-8 text-slate-300">
-                Choose a plan for ongoing execution or add credit packs when a launch cycle needs more output.
+                Premium monthly tiers include strategic capacity. Refill packs are designed for deliberate scale, not discount behavior.
               </p>
             </div>
           </div>
@@ -245,6 +275,7 @@ export default function Home() {
                     {pack.name}
                   </p>
                   <p className="mt-4 text-2xl font-semibold text-white">{pack.credits}</p>
+                  <p className="mt-1 text-sm uppercase tracking-[0.18em] text-slate-500">{pack.price}</p>
                   <p className="mt-3 text-sm leading-6 text-slate-400">{pack.use}</p>
                   <button
                     type="button"
@@ -256,6 +287,33 @@ export default function Home() {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      </section>
+
+
+      <section className="border-b border-white/[0.07] bg-[#07090b] px-6 py-24 sm:py-28">
+        <div className="mx-auto max-w-6xl">
+          <div className="grid gap-10 lg:grid-cols-[0.72fr_1fr] lg:gap-16">
+            <p className="text-sm font-medium uppercase tracking-[0.36em] text-slate-500">
+              Action Value
+            </p>
+            <div className="space-y-4">
+              {actionValueMap.map((item) => (
+                <article key={item.action} className="border border-white/[0.08] bg-black/20 p-6">
+                  <p className="text-xs uppercase tracking-[0.22em] text-slate-500">{item.action}</p>
+                  <p className="mt-3 text-2xl font-semibold text-white">{item.value}</p>
+                  <p className="mt-3 text-sm leading-7 text-slate-300">{item.logic}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-10 grid gap-4 border border-white/[0.08] bg-white/[0.02] p-8">
+            <p className="text-sm font-medium uppercase tracking-[0.3em] text-slate-500">Credit Logic</p>
+            {creditLogic.map((rule) => (
+              <p key={rule} className="text-sm leading-7 text-slate-300">{rule}</p>
+            ))}
           </div>
         </div>
       </section>
