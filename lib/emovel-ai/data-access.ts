@@ -1,5 +1,5 @@
 import { getPlanLimits } from "../billing/plan-limits";
-import { createServerSupabaseClient } from "../supabase/server";
+import { createServerSupabaseClient, createServiceSupabaseClient } from "../supabase/server";
 import { eq } from "../supabase/rest-client";
 import { V1_FIXED_SECTION_ORDER } from "./section-order";
 import type {
@@ -12,6 +12,7 @@ import type {
   ExportRecord,
   OnboardingStep,
   PlanLimits,
+  PdfExportRecord,
   Profile,
   Project,
   ProjectInput,
@@ -444,6 +445,29 @@ export async function recordExport(
     format: input.format,
     storage_path: input.storagePath || null,
     content_hash: input.contentHash || null,
+  });
+
+  return firstOrNull(rows);
+}
+
+export async function recordPdfExport(
+  context: UserDataContext,
+  workspaceId: string,
+  input: {
+    id: string;
+    projectId: string;
+    storagePath: string;
+    signedUrlExpiresAt: string;
+  },
+) {
+  const client = createServiceSupabaseClient();
+  const rows = await client.insert<PdfExportRecord>("pdf_exports", {
+    id: input.id,
+    user_id: context.userId,
+    workspace_id: workspaceId,
+    project_id: input.projectId,
+    storage_path: input.storagePath,
+    signed_url_expires_at: input.signedUrlExpiresAt,
   });
 
   return firstOrNull(rows);

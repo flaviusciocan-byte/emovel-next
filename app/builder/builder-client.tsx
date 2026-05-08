@@ -97,6 +97,14 @@ interface BuilderExportResponse {
   usedReadyFallback: boolean;
 }
 
+interface BuilderPdfExportResponse {
+  fileName: string;
+  signedUrl: string;
+  expiresAt: string;
+  exportId: string;
+  warnings: string[];
+}
+
 function textFieldClass() {
   return "w-full border border-white/10 bg-black/35 px-4 py-3 text-sm text-white outline-none transition focus:border-white/35";
 }
@@ -289,7 +297,7 @@ function isTemplateSpecSnapshot(value: unknown): value is TemplateSpecV1 {
 }
 
 export default function BuilderClient() {
-  const { token: authToken, signOut: signOutSession } = useAuthSession();
+  const { token: authToken, signOut: signOutSession, planLimits } = useAuthSession();
   const { credits, costs, canAfford, spendCredits } = useCredits();
   const addCreditsModal = useAddCreditsModal();
   const [systemBrief, setSystemBrief] = useState(defaultBrief);
@@ -942,6 +950,44 @@ export default function BuilderClient() {
     setExportStatus(`${data.fileName} downloaded locally.`);
   }
 
+  async function downloadPdfExport() {
+    if (!authToken || !persistedProject) {
+      setExportStatus("Sign in and generate a persisted project before exporting PDF.");
+      return;
+    }
+
+    if (!planLimits?.canExportPdf) {
+      setExportStatus("PDF export requires Pro.");
+      return;
+    }
+
+    const response = await fetch("/api/exports/pdf", {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({
+        projectId: persistedProject.id,
+      }),
+    });
+    const data = (await response.json().catch(() => null)) as
+      | (Partial<BuilderPdfExportResponse> & { error?: string })
+      | null;
+
+    if (!response.ok || !data?.signedUrl || !data.fileName) {
+      setExportStatus(data?.error || "PDF export failed.");
+      return;
+    }
+
+    const link = document.createElement("a");
+
+    link.href = data.signedUrl;
+    link.download = data.fileName;
+    link.rel = "noopener";
+    link.click();
+
+    const warningCopy = data.warnings?.length ? ` ${data.warnings.join(" ")}` : "";
+    setExportStatus(`${data.fileName} is available through a private signed URL.${warningCopy}`);
+  }
+
   function handleSignOut() {
     signOutSession();
     setPersistedProject(null);
@@ -1102,10 +1148,12 @@ export default function BuilderClient() {
             readySectionCount={exportCounts.ready}
             status={exportStatus}
             canExport={Boolean(authToken && persistedProject)}
+            canExportPdf={Boolean(authToken && persistedProject && planLimits?.canExportPdf)}
             onCopyMarkdown={() => copyProjectExport("markdown")}
             onDownloadMarkdown={() => downloadProjectExport("markdown")}
             onCopyTxt={() => copyProjectExport("txt")}
             onDownloadTxt={() => downloadProjectExport("txt")}
+            onDownloadPdf={downloadPdfExport}
           />
         </div>
       ) : (
@@ -1595,20 +1643,24 @@ function ExportPanel({
   readySectionCount,
   status,
   canExport,
+  canExportPdf,
   onCopyMarkdown,
   onDownloadMarkdown,
   onCopyTxt,
   onDownloadTxt,
+  onDownloadPdf,
 }: {
   projectName: string;
   acceptedSectionCount: number;
   readySectionCount: number;
   status: string;
   canExport: boolean;
+  canExportPdf: boolean;
   onCopyMarkdown: () => void;
   onDownloadMarkdown: () => void;
   onCopyTxt: () => void;
   onDownloadTxt: () => void;
+  onDownloadPdf: () => void;
 }) {
   const fallbackWarning = acceptedSectionCount === 0 && readySectionCount > 0;
 
@@ -1628,7 +1680,12 @@ function ExportPanel({
             ) : null}
             {!canExport ? (
               <p className="text-white/40">
-                Sign in and generate a persisted project to export Markdown or TXT.
+                Sign in and generate a persisted project to export Markdown, TXT, or PDF.
+              </p>
+            ) : null}
+            {canExport && !canExportPdf ? (
+              <p className="text-white/40">
+                PDF export requires Pro. Markdown and TXT remain available.
               </p>
             ) : null}
           </div>
@@ -1665,6 +1722,14 @@ function ExportPanel({
             className="border border-white/15 px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-white transition hover:border-white/35 disabled:cursor-not-allowed disabled:border-white/10 disabled:text-white/35"
           >
             Download TXT
+          </button>
+          <button
+            type="button"
+            onClick={onDownloadPdf}
+            disabled={!canExportPdf}
+            className="border border-[#9f7a28]/60 px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-white transition hover:border-[#d7b45f] disabled:cursor-not-allowed disabled:border-white/10 disabled:text-white/35"
+          >
+            Download PDF
           </button>
         </div>
       </div>

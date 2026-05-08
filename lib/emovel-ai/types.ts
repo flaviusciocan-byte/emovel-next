@@ -179,6 +179,16 @@ export interface ExportRecord {
   created_at: string;
 }
 
+export interface PdfExportRecord {
+  id: string;
+  user_id: string;
+  workspace_id: string;
+  project_id: string;
+  storage_path: string;
+  signed_url_expires_at: string | null;
+  created_at: string;
+}
+
 export interface PlanLimits {
   plan: UserPlan;
   maxProjects: number | null;
