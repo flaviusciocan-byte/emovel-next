@@ -13,6 +13,7 @@ export function buildTemplateSpecPrompt(input: {
   brandProfile: BrandProfile | null;
   project: ProjectWithSections;
   currentSpec: TemplateSpecV1 | null;
+  knowledgePromptSection?: string | null;
 }) {
   const brandContext = input.brandProfile
     ? {
@@ -37,7 +38,7 @@ export function buildTemplateSpecPrompt(input: {
     })),
   };
 
-  const system = [
+  const systemParts = [
     "You generate EMOVEL Builder Template Spec v1 JSON only.",
     "Return one valid JSON object. Do not include markdown, comments, prose, or code fences.",
     "The output must match schemaVersion \"v1\" exactly.",
@@ -46,7 +47,13 @@ export function buildTemplateSpecPrompt(input: {
     "Do not invent fake claims, fake testimonials, fake metrics, fake guarantees, or fake integrations.",
     "Every section must have a clear conversion role.",
     "Prefer 6 to 9 sections unless the brief clearly needs fewer.",
-  ].join("\n");
+  ];
+
+  if (input.knowledgePromptSection) {
+    systemParts.push("", input.knowledgePromptSection);
+  }
+
+  const system = systemParts.join("\n");
 
   const user = [
     "Generate a Template Spec v1 for this Builder request.",

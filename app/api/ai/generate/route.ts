@@ -8,6 +8,7 @@ import {
   mapUnknownAiRouteError,
   type AiRouteErrorCategory,
 } from "../../../../lib/ai/error-map";
+import { getKnowledgePromptSectionForGeneration } from "../../../../lib/ai/knowledge-injection";
 import { getAvailableModelSequence, estimateCostCents } from "../../../../lib/ai/model-registry";
 import { streamAiText } from "../../../../lib/ai/providers";
 import { checkAiRateLimit } from "../../../../lib/ai/rate-limit";
@@ -358,12 +359,14 @@ export async function POST(request: Request) {
 
     const brandProfile = await getBrandProfile(context, workspace.id);
     const currentSpec = validCurrentSpec(payload.currentSpec);
+    const knowledgePromptSection = await getKnowledgePromptSectionForGeneration({ boundary });
     const prompt = buildTemplateSpecPrompt({
       brief,
       boundary,
       brandProfile,
       project,
       currentSpec,
+      knowledgePromptSection,
     });
 
     const stream = new ReadableStream<Uint8Array>({

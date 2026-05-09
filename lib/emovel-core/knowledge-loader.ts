@@ -20,7 +20,7 @@ export interface LoadedEmovelKnowledgeForModule {
 async function loadDocumentContent(
   document: EmovelKnowledgeDocument,
 ): Promise<LoadedEmovelKnowledgeDocument> {
-  const absolutePath = path.join(process.cwd(), document.filePath);
+  const absolutePath = path.join(process.cwd(), "docs", "emovel-core", path.basename(document.filePath));
   const content = await readFile(absolutePath, "utf8");
 
   return {
