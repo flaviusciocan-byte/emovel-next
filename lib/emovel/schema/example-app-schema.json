@@ -1,0 +1,169 @@
+{
+  "schemaVersion": "emovel-app-schema.v0",
+  "project": {
+    "id": "premium-prompt-system-shop",
+    "name": "Premium Prompt System Shop",
+    "slug": "premium-prompt-system-shop",
+    "category": "commerce",
+    "sourcePrompt": "Create a premium shop for selling prompt systems to founders.",
+    "productBrief": {
+      "title": "Premium Prompt System Shop",
+      "summary": "Create a premium shop for selling prompt systems to founders.",
+      "problem": "Founders need structured prompt systems that turn scattered AI usage into repeatable output.",
+      "promise": "Present a premium commercial system with clear offer structure, proof, and checkout intent.",
+      "primaryUseCase": "commerce",
+      "positioning": "Premium EMOVEL-owned commercial app foundation.",
+      "constraints": [
+        "No external repository integration.",
+        "No copied third-party builder systems.",
+        "No UI page, deployment logic, or mobile runtime."
+      ]
+    },
+    "generatedAt": "2026-05-14T00:00:00.000Z"
+  },
+  "audience": {
+    "primarySegment": "Founders and operators buying premium prompt systems.",
+    "sophistication": "advanced",
+    "pains": ["Scattered AI workflows", "Weak offer packaging", "Slow content production"],
+    "desiredOutcomes": ["Repeatable prompt workflows", "Clear commercial offer", "Fast implementation"],
+    "locales": ["en"],
+    "accessibilityNotes": ["Future UI should preserve semantic headings and keyboard-reachable actions."]
+  },
+  "monetization": {
+    "model": "one-time",
+    "currency": "USD",
+    "checkoutProvider": "gumroad",
+    "offers": [
+      {
+        "id": "founder-prompt-system",
+        "name": "Founder Prompt System",
+        "priceAnchor": "$49",
+        "deliverables": ["Prompt library", "Implementation guide", "Workflow templates"],
+        "callToActionId": "buy-founder-system"
+      }
+    ],
+    "notes": "Checkout is represented as schema intent only."
+  },
+  "screens": [
+    {
+      "id": "home",
+      "name": "Home",
+      "route": "/",
+      "intent": "Present the offer and route qualified users to checkout.",
+      "priority": "primary",
+      "sections": ["hero", "benefits", "pricing", "faq"],
+      "componentIds": ["home-hero", "benefit-grid", "offer-pricing", "purchase-faq"],
+      "actionIds": ["buy-founder-system"]
+    }
+  ],
+  "components": [
+    {
+      "id": "home-hero",
+      "type": "hero",
+      "screenId": "home",
+      "name": "Home Hero",
+      "purpose": "Frame the premium prompt system and introduce the primary purchase action.",
+      "props": {
+        "eyebrow": "EMOVEL Prompt Systems",
+        "headline": "Premium prompt infrastructure for founders.",
+        "ctaLabel": "Get The System"
+      },
+      "dataBindings": [],
+      "states": ["default"]
+    },
+    {
+      "id": "offer-pricing",
+      "type": "pricing-block",
+      "screenId": "home",
+      "name": "Offer Pricing",
+      "purpose": "Show the core offer, price anchor, and purchase action.",
+      "props": {
+        "title": "Founder Prompt System",
+        "priceAnchor": "$49"
+      },
+      "dataBindings": ["monetization.offers"],
+      "states": ["default", "featured"]
+    }
+  ],
+  "theme": {
+    "packId": "emovel-black-gold",
+    "archetypeId": "luxury-tech-editorial",
+    "mode": "dark",
+    "tokens": {
+      "background": "#050505",
+      "surface": "#111111",
+      "text": "#F7F4EE",
+      "mutedText": "#A8A29A",
+      "accent": "#C8A24A",
+      "border": "#2A2722",
+      "radius": "8px",
+      "fontFamily": "Inter, ui-sans-serif, system-ui, sans-serif"
+    },
+    "notes": "EMOVEL-owned black and cinematic gold theme foundation."
+  },
+  "actions": [
+    {
+      "id": "buy-founder-system",
+      "type": "checkout",
+      "label": "Get The System",
+      "sourceScreenId": "home",
+      "target": "gumroad-product-url-placeholder",
+      "requiresAuth": false,
+      "metadata": {
+        "integrationStatus": "placeholder"
+      }
+    }
+  ],
+  "dataModel": {
+    "entities": [
+      {
+        "id": "customer",
+        "name": "Customer",
+        "description": "A buyer or qualified lead for the prompt system.",
+        "fields": [
+          {
+            "name": "email",
+            "type": "string",
+            "required": true,
+            "description": "Customer contact email."
+          }
+        ]
+      }
+    ],
+    "persistence": "none",
+    "notes": "Planning model only. No database or runtime integration."
+  },
+  "exportTargets": [
+    {
+      "target": "json-schema",
+      "enabled": true,
+      "notes": "Primary structured output."
+    },
+    {
+      "target": "component-map",
+      "enabled": true,
+      "notes": "Internal component planning output."
+    },
+    {
+      "target": "next-app",
+      "enabled": false,
+      "notes": "Deferred until UI generation is requested."
+    }
+  ],
+  "qaChecklist": [
+    {
+      "id": "schema-has-required-sections",
+      "label": "Generated schema includes project, audience, screens, components, theme, actions, data, exports, and QA.",
+      "status": "pending",
+      "severity": "high",
+      "owner": "compiler"
+    },
+    {
+      "id": "commercial-flow-preserved",
+      "label": "Commercial intent and monetization path are explicit before UI generation.",
+      "status": "pending",
+      "severity": "high",
+      "owner": "content"
+    }
+  ]
+}
