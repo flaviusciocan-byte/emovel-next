@@ -185,6 +185,23 @@ function getSchemaPreview(value: GenerateSchemaResponse | null): SchemaPreview |
   };
 }
 
+function getComponentPreviewList(response: GenerateSchemaResponse | null) {
+  const schema = isRecord(response?.result) && isRecord(response.result.schema) ? response.result.schema : null;
+
+  if (!schema) {
+    return [];
+  }
+
+  const components = Array.isArray(schema.components) ? schema.components : [];
+
+  return components.filter(isRecord).map((component, index) => ({
+    id: readString(component.id, `component-${index + 1}`),
+    name: readString(component.name, `Component ${index + 1}`),
+    type: readString(component.type, "unknown"),
+    screenId: readString(component.screenId, "unknown"),
+    purpose: readString(component.purpose, "No purpose defined."),
+  }));
+}
 function getPromptQuality(value: string): PromptQuality {
   const normalized = value.trim();
   const lowered = normalized.toLowerCase();
@@ -242,6 +259,7 @@ export default function AppFactoryPage() {
   const validationStatus = getValidationStatus(apiResponse?.validation);
   const schemaSummary = getSchemaSummary(apiResponse);
   const schemaPreview = getSchemaPreview(apiResponse);
+  const componentPreviewList = getComponentPreviewList(apiResponse);
   const promptQuality = getPromptQuality(prompt);
   const selectedThemePack =
     EMOVEL_THEME_PACKS_V0.find((themePack) => themePack.packId === selectedThemePackId) ??
@@ -641,7 +659,27 @@ export default function AppFactoryPage() {
                 </div>
               </div>
             ) : null}
-
+            {componentPreviewList.length > 0 ? (
+              <div className="mt-5 border border-white/10 bg-black/25 p-4">
+                <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-white/35">
+                  Component Preview List
+                </p>
+                <div className="mt-4 grid gap-3">
+                  {componentPreviewList.map((component) => (
+                    <div key={component.id} className="border border-white/10 bg-white/[0.035] p-4">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <p className="text-sm font-semibold text-white">{component.name}</p>
+                        <span className="text-[0.65rem] uppercase tracking-[0.16em] text-[#c8a24a]">
+                          {component.type}
+                        </span>
+                      </div>
+                      <p className="mt-2 text-xs text-white/45">Screen: {component.screenId}</p>
+                      <p className="mt-3 text-sm leading-6 text-white/60">{component.purpose}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
             <pre className="mt-6 max-h-[640px] min-h-72 max-w-full overflow-auto border border-white/10 bg-[#050505] p-4 text-xs leading-6 text-white/60">
               {apiResponse
                 ? JSON.stringify(apiResponse, null, 2)
@@ -653,3 +691,8 @@ export default function AppFactoryPage() {
     </main>
   );
 }
+
+
+
+
+
