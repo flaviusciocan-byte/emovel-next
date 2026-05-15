@@ -36,6 +36,7 @@ export default function AppFactoryPage() {
   const [prompt, setPrompt] = useState(defaultPrompt);
   const [apiResponse, setApiResponse] = useState<GenerateSchemaResponse | null>(null);
   const [status, setStatus] = useState("Enter a product prompt and generate the internal schema.");
+  const [copyStatus, setCopyStatus] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const validationStatus = getValidationStatus(apiResponse?.validation);
 
@@ -49,6 +50,7 @@ export default function AppFactoryPage() {
     }
 
     setIsGenerating(true);
+    setCopyStatus("");
     setStatus("Generating deterministic App Factory schema...");
 
     try {
@@ -75,6 +77,15 @@ export default function AppFactoryPage() {
     } finally {
       setIsGenerating(false);
     }
+  }
+
+  async function onCopyJson() {
+    if (!apiResponse) {
+      return;
+    }
+
+    await navigator.clipboard.writeText(JSON.stringify(apiResponse, null, 2));
+    setCopyStatus("Copied");
   }
 
   return (
@@ -136,6 +147,23 @@ export default function AppFactoryPage() {
               <div className="mt-5 border border-white/10 bg-white/[0.035] px-4 py-3 text-xs uppercase tracking-[0.16em] text-white/60">
                 Validation: {validationStatus.valid ? "valid" : "invalid"} · Errors:{" "}
                 {validationStatus.errors.length}
+              </div>
+            ) : null}
+
+            {apiResponse ? (
+              <div className="mt-5 flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={onCopyJson}
+                  className="border border-white/15 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-white transition hover:border-[#c8a24a]/70 hover:text-[#c8a24a]"
+                >
+                  Copy JSON
+                </button>
+                {copyStatus ? (
+                  <span className="text-xs uppercase tracking-[0.16em] text-[#c8a24a]">
+                    {copyStatus}
+                  </span>
+                ) : null}
               </div>
             ) : null}
 
