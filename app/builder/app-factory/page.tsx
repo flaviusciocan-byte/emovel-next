@@ -5,6 +5,7 @@ import { useState } from "react";
 interface GenerateSchemaResponse {
   success: boolean;
   result?: unknown;
+  validation?: unknown;
   error?: string;
 }
 
@@ -13,7 +14,7 @@ const defaultPrompt =
 
 export default function AppFactoryPage() {
   const [prompt, setPrompt] = useState(defaultPrompt);
-  const [result, setResult] = useState<unknown>(null);
+  const [apiResponse, setApiResponse] = useState<GenerateSchemaResponse | null>(null);
   const [status, setStatus] = useState("Enter a product prompt and generate the internal schema.");
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -22,7 +23,7 @@ export default function AppFactoryPage() {
 
     if (!normalizedPrompt) {
       setStatus("Prompt is required before generation.");
-      setResult(null);
+      setApiResponse(null);
       return;
     }
 
@@ -45,10 +46,10 @@ export default function AppFactoryPage() {
         throw new Error(payload.error || "Schema generation failed.");
       }
 
-      setResult(payload.result);
+      setApiResponse(payload);
       setStatus("Schema generated with the deterministic internal adapter.");
     } catch (error) {
-      setResult(null);
+      setApiResponse(null);
       setStatus(error instanceof Error ? error.message : "Schema generation failed.");
     } finally {
       setIsGenerating(false);
@@ -111,8 +112,8 @@ export default function AppFactoryPage() {
             </div>
 
             <pre className="mt-6 max-h-[640px] min-h-72 max-w-full overflow-auto border border-white/10 bg-[#050505] p-4 text-xs leading-6 text-white/60">
-              {result
-                ? JSON.stringify(result, null, 2)
+              {apiResponse
+                ? JSON.stringify(apiResponse, null, 2)
                 : "{\n  \"status\": \"Waiting for generation\"\n}"}
             </pre>
           </section>
