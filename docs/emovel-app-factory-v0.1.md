@@ -76,3 +76,27 @@ Add route-level tests for `POST /api/builder/app-factory/generate-schema`, cover
 - valid prompt returns `{ success, result, validation }`
 - generated schema validates successfully
 - no external AI provider is called
+
+## Theme Selector Update
+
+EMOVEL App Factory now includes theme pack selection.
+
+Current theme packs:
+
+- EMOVEL Black Gold
+- EMOVEL Obsidian Blue
+- EMOVEL Graphite Ivory
+- EMOVEL Carbon Sand
+- EMOVEL Midnight Purple
+
+Behavior:
+
+- The user selects a theme before generating.
+- The selected theme is sent to the API as `themePackId`.
+- The generated schema uses the selected theme.
+- The Schema Preview reflects the selected theme.
+- Validation still runs after the theme is applied.
+
+Rule:
+
+Theme packs are EMOVEL-owned. External systems may be used only as reference, not copied directly.
