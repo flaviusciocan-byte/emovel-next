@@ -9,14 +9,35 @@ interface GenerateSchemaResponse {
   error?: string;
 }
 
+interface ValidationStatus {
+  valid: boolean;
+  errors: unknown[];
+}
+
 const defaultPrompt =
   "Create a premium EMOVEL product page for a founder-focused prompt system with a clear offer, Gumroad checkout intent, and a concise QA checklist.";
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function getValidationStatus(value: unknown): ValidationStatus | null {
+  if (!isRecord(value) || typeof value.valid !== "boolean" || !Array.isArray(value.errors)) {
+    return null;
+  }
+
+  return {
+    valid: value.valid,
+    errors: value.errors,
+  };
+}
 
 export default function AppFactoryPage() {
   const [prompt, setPrompt] = useState(defaultPrompt);
   const [apiResponse, setApiResponse] = useState<GenerateSchemaResponse | null>(null);
   const [status, setStatus] = useState("Enter a product prompt and generate the internal schema.");
   const [isGenerating, setIsGenerating] = useState(false);
+  const validationStatus = getValidationStatus(apiResponse?.validation);
 
   async function onGenerate() {
     const normalizedPrompt = prompt.trim();
@@ -110,6 +131,13 @@ export default function AppFactoryPage() {
                 deterministic
               </span>
             </div>
+
+            {validationStatus ? (
+              <div className="mt-5 border border-white/10 bg-white/[0.035] px-4 py-3 text-xs uppercase tracking-[0.16em] text-white/60">
+                Validation: {validationStatus.valid ? "valid" : "invalid"} · Errors:{" "}
+                {validationStatus.errors.length}
+              </div>
+            ) : null}
 
             <pre className="mt-6 max-h-[640px] min-h-72 max-w-full overflow-auto border border-white/10 bg-[#050505] p-4 text-xs leading-6 text-white/60">
               {apiResponse
