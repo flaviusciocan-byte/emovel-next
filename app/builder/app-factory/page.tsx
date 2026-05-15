@@ -21,6 +21,11 @@ interface SchemaSummary {
   componentCount: number;
 }
 
+interface PromptQuality {
+  status: "Weak" | "Good" | "Premium";
+  notes: string[];
+}
+
 const defaultPrompt =
   "Create a premium EMOVEL product page for a founder-focused prompt system with a clear offer, Gumroad checkout intent, and a concise QA checklist.";
 
@@ -50,6 +55,20 @@ const promptPresets = [
     prompt:
       "Create a mobile app blueprint for a premium productivity product, including audience, monetization, screen map, component map, theme pack, actions, data model, and QA checklist.",
   },
+] as const;
+
+const premiumPromptIdeas = [
+  "offer",
+  "audience",
+  "checkout",
+  "dashboard",
+  "mobile",
+  "validation",
+  "components",
+  "theme",
+  "gumroad",
+  "product",
+  "landing page",
 ] as const;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -90,6 +109,40 @@ function getSchemaSummary(value: GenerateSchemaResponse | null): SchemaSummary |
   };
 }
 
+function getPromptQuality(value: string): PromptQuality {
+  const normalized = value.trim();
+  const lowered = normalized.toLowerCase();
+  const matchedIdeas = premiumPromptIdeas.filter((idea) => lowered.includes(idea));
+
+  if (normalized.length < 40) {
+    return {
+      status: "Weak",
+      notes: [
+        "Add more context about the product and audience.",
+        "Include offer, screen, or monetization details before generating.",
+      ],
+    };
+  }
+
+  if (matchedIdeas.length >= 3) {
+    return {
+      status: "Premium",
+      notes: [
+        `Strong prompt coverage: ${matchedIdeas.slice(0, 3).join(", ")}.`,
+        "Ready for a more useful schema pass.",
+      ],
+    };
+  }
+
+  return {
+    status: "Good",
+    notes: [
+      "Prompt length is strong enough for generation.",
+      "Add more specifics like offer, audience, checkout, components, or theme to reach Premium.",
+    ],
+  };
+}
+
 export default function AppFactoryPage() {
   const [prompt, setPrompt] = useState(defaultPrompt);
   const [apiResponse, setApiResponse] = useState<GenerateSchemaResponse | null>(null);
@@ -98,6 +151,7 @@ export default function AppFactoryPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const validationStatus = getValidationStatus(apiResponse?.validation);
   const schemaSummary = getSchemaSummary(apiResponse);
+  const promptQuality = getPromptQuality(prompt);
 
   async function onGenerate() {
     const normalizedPrompt = prompt.trim();
@@ -211,6 +265,22 @@ export default function AppFactoryPage() {
                 placeholder="Describe the app, audience, offer, screens, and commercial intent."
               />
             </label>
+
+            <div className="mt-4 border border-white/10 bg-black/25 p-4">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-white/35">
+                  Prompt Quality Notes
+                </p>
+                <span className="text-xs font-semibold uppercase tracking-[0.16em] text-[#c8a24a]">
+                  {promptQuality.status}
+                </span>
+              </div>
+              <div className="mt-3 grid gap-2 text-xs leading-6 text-white/55">
+                {promptQuality.notes.map((note) => (
+                  <p key={note}>{note}</p>
+                ))}
+              </div>
+            </div>
 
             <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex flex-wrap gap-3">
