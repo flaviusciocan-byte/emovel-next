@@ -143,6 +143,16 @@ function getPromptQuality(value: string): PromptQuality {
   };
 }
 
+function createImprovedPrompt(value: string) {
+  const normalized = value.trim();
+
+  return [
+    `Create a premium EMOVEL app schema from this product idea: "${normalized}".`,
+    "Define a clear commercial offer, target audience, checkout intent, component map, EMOVEL black-and-gold theme direction, and validation requirements.",
+    "Include project info, screens, components, monetization, actions, data model, export targets, and QA checklist.",
+  ].join(" ");
+}
+
 export default function AppFactoryPage() {
   const [prompt, setPrompt] = useState(defaultPrompt);
   const [apiResponse, setApiResponse] = useState<GenerateSchemaResponse | null>(null);
@@ -225,6 +235,14 @@ export default function AppFactoryPage() {
     setStatus("Enter a product prompt and generate the internal schema.");
   }
 
+  function onImprovePrompt() {
+    if (!prompt.trim() || promptQuality.status === "Premium") {
+      return;
+    }
+
+    setPrompt(createImprovedPrompt(prompt));
+  }
+
   return (
     <main className="min-h-screen bg-[#030405] px-6 py-24 text-white sm:px-8 lg:px-10">
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-10">
@@ -271,9 +289,20 @@ export default function AppFactoryPage() {
                 <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-white/35">
                   Prompt Quality Notes
                 </p>
-                <span className="text-xs font-semibold uppercase tracking-[0.16em] text-[#c8a24a]">
-                  {promptQuality.status}
-                </span>
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="text-xs font-semibold uppercase tracking-[0.16em] text-[#c8a24a]">
+                    {promptQuality.status}
+                  </span>
+                  {prompt ? (
+                    <button
+                      type="button"
+                      onClick={onImprovePrompt}
+                      className="border border-white/15 px-3 py-1.5 text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-white transition hover:border-[#c8a24a]/70 hover:text-[#c8a24a]"
+                    >
+                      Improve Prompt
+                    </button>
+                  ) : null}
+                </div>
               </div>
               <div className="mt-3 grid gap-2 text-xs leading-6 text-white/55">
                 {promptQuality.notes.map((note) => (
