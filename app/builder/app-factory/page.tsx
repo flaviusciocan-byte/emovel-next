@@ -88,6 +88,23 @@ export default function AppFactoryPage() {
     setCopyStatus("Copied");
   }
 
+  function onDownloadJson() {
+    if (!apiResponse) {
+      return;
+    }
+
+    const blob = new Blob([JSON.stringify(apiResponse, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = "emovel-app-factory-schema.json";
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <main className="min-h-screen bg-[#030405] px-6 py-24 text-white sm:px-8 lg:px-10">
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-10">
@@ -151,13 +168,20 @@ export default function AppFactoryPage() {
             ) : null}
 
             {apiResponse ? (
-              <div className="mt-5 flex items-center gap-3">
+              <div className="mt-5 flex flex-wrap items-center gap-3">
                 <button
                   type="button"
                   onClick={onCopyJson}
                   className="border border-white/15 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-white transition hover:border-[#c8a24a]/70 hover:text-[#c8a24a]"
                 >
                   Copy JSON
+                </button>
+                <button
+                  type="button"
+                  onClick={onDownloadJson}
+                  className="border border-white/15 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-white transition hover:border-[#c8a24a]/70 hover:text-[#c8a24a]"
+                >
+                  Download JSON
                 </button>
                 {copyStatus ? (
                   <span className="text-xs uppercase tracking-[0.16em] text-[#c8a24a]">
