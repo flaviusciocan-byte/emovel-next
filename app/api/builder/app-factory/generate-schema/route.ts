@@ -1,0 +1,42 @@
+import { createAppFactorySchemaWithAIAdapterV0 } from "../../../../../lib/emovel/ai/app-factory-ai-adapter";
+
+interface GenerateSchemaRequestBody {
+  prompt?: unknown;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+async function parseRequestBody(request: Request): Promise<GenerateSchemaRequestBody> {
+  try {
+    const body = await request.json();
+
+    return isRecord(body) ? body : {};
+  } catch {
+    return {};
+  }
+}
+
+export async function POST(request: Request) {
+  const body = await parseRequestBody(request);
+
+  if (typeof body.prompt !== "string" || body.prompt.trim().length === 0) {
+    return Response.json(
+      {
+        success: false,
+        error: "Prompt is required.",
+      },
+      { status: 400 },
+    );
+  }
+
+  const result = createAppFactorySchemaWithAIAdapterV0({
+    prompt: body.prompt,
+  });
+
+  return Response.json({
+    success: true,
+    result,
+  });
+}
