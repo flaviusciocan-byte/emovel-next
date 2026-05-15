@@ -21,6 +21,23 @@ interface SchemaSummary {
   componentCount: number;
 }
 
+interface SchemaPreview {
+  hero: {
+    eyebrow: string;
+    headline: string;
+    ctaLabel: string;
+  };
+  offer: {
+    title: string;
+    priceAnchor: string;
+  };
+  theme: {
+    packId: string;
+    archetypeId: string;
+    accent: string;
+  };
+}
+
 interface PromptQuality {
   status: "Weak" | "Good" | "Premium";
   notes: string[];
@@ -109,6 +126,57 @@ function getSchemaSummary(value: GenerateSchemaResponse | null): SchemaSummary |
   };
 }
 
+function readString(value: unknown, fallback: string) {
+  return typeof value === "string" && value.trim() ? value : fallback;
+}
+
+function readComponentProp(component: Record<string, unknown> | undefined, key: string, fallback: string) {
+  const props = isRecord(component?.props) ? component.props : {};
+
+  return readString(props[key], fallback);
+}
+
+function getSchemaPreview(value: GenerateSchemaResponse | null): SchemaPreview | null {
+  if (!value || !isRecord(value.result)) {
+    return null;
+  }
+
+  const schema = value.result.schema;
+
+  if (!isRecord(schema)) {
+    return null;
+  }
+
+  const components = Array.isArray(schema.components) ? schema.components : [];
+  const heroComponent = components.find(
+    (component): component is Record<string, unknown> =>
+      isRecord(component) && component.type === "hero",
+  );
+  const pricingComponent = components.find(
+    (component): component is Record<string, unknown> =>
+      isRecord(component) && component.type === "pricing-block",
+  );
+  const theme = isRecord(schema.theme) ? schema.theme : {};
+  const tokens = isRecord(theme.tokens) ? theme.tokens : {};
+
+  return {
+    hero: {
+      eyebrow: readComponentProp(heroComponent, "eyebrow", "EMOVEL App Factory"),
+      headline: readComponentProp(heroComponent, "headline", "Generated product system"),
+      ctaLabel: readComponentProp(heroComponent, "ctaLabel", "Start"),
+    },
+    offer: {
+      title: readComponentProp(pricingComponent, "title", "Primary Offer"),
+      priceAnchor: readComponentProp(pricingComponent, "priceAnchor", "TBD"),
+    },
+    theme: {
+      packId: readString(theme.packId, "Unknown theme pack"),
+      archetypeId: readString(theme.archetypeId, "Unknown archetype"),
+      accent: readString(tokens.accent, "#c8a24a"),
+    },
+  };
+}
+
 function getPromptQuality(value: string): PromptQuality {
   const normalized = value.trim();
   const lowered = normalized.toLowerCase();
@@ -161,6 +229,7 @@ export default function AppFactoryPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const validationStatus = getValidationStatus(apiResponse?.validation);
   const schemaSummary = getSchemaSummary(apiResponse);
+  const schemaPreview = getSchemaPreview(apiResponse);
   const promptQuality = getPromptQuality(prompt);
 
   async function onGenerate() {
@@ -418,6 +487,65 @@ export default function AppFactoryPage() {
                     Errors
                   </p>
                   <p className="mt-2 text-white">{validationStatus?.errors.length ?? 0}</p>
+                </div>
+              </div>
+            ) : null}
+
+            {apiResponse ? (
+              <div className="mt-5 border border-white/10 bg-black/25 p-4">
+                <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-white/35">
+                  Schema Preview
+                </p>
+                <div className="mt-4 grid gap-4">
+                  <div className="border border-white/10 bg-[#050505] p-4">
+                    <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-[#c8a24a]">
+                      {schemaPreview?.hero.eyebrow ?? "EMOVEL App Factory"}
+                    </p>
+                    <h3 className="mt-3 text-2xl font-semibold tracking-tight text-white">
+                      {schemaPreview?.hero.headline ?? "Generated product system"}
+                    </h3>
+                    <button
+                      type="button"
+                      className="mt-5 border border-white/15 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-white"
+                    >
+                      {schemaPreview?.hero.ctaLabel ?? "Start"}
+                    </button>
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="border border-white/10 bg-white/[0.035] p-4">
+                      <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-white/35">
+                        Offer
+                      </p>
+                      <p className="mt-3 text-lg font-semibold text-white">
+                        {schemaPreview?.offer.title ?? "Primary Offer"}
+                      </p>
+                      <p className="mt-2 text-sm text-[#c8a24a]">
+                        {schemaPreview?.offer.priceAnchor ?? "TBD"}
+                      </p>
+                    </div>
+
+                    <div className="border border-white/10 bg-white/[0.035] p-4">
+                      <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-white/35">
+                        Theme
+                      </p>
+                      <p className="mt-3 text-sm text-white">
+                        {schemaPreview?.theme.packId ?? "Unknown theme pack"}
+                      </p>
+                      <p className="mt-2 text-xs text-white/50">
+                        {schemaPreview?.theme.archetypeId ?? "Unknown archetype"}
+                      </p>
+                      <div className="mt-4 flex items-center gap-3">
+                        <span
+                          className="h-5 w-5 border border-white/20"
+                          style={{ backgroundColor: schemaPreview?.theme.accent ?? "#c8a24a" }}
+                        />
+                        <span className="text-xs uppercase tracking-[0.16em] text-white/45">
+                          Accent
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             ) : null}
