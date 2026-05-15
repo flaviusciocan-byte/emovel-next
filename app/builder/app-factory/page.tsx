@@ -36,6 +36,7 @@ interface SchemaPreview {
     archetypeId: string;
     accent: string;
   };
+  checkoutTarget: string;
 }
 
 interface PromptQuality {
@@ -158,6 +159,11 @@ function getSchemaPreview(value: GenerateSchemaResponse | null): SchemaPreview |
   );
   const theme = isRecord(schema.theme) ? schema.theme : {};
   const tokens = isRecord(theme.tokens) ? theme.tokens : {};
+  const actions = Array.isArray(schema.actions) ? schema.actions : [];
+  const checkoutAction = actions.find(
+    (action): action is Record<string, unknown> =>
+      isRecord(action) && action.type === "checkout",
+  );
 
   return {
     hero: {
@@ -174,6 +180,7 @@ function getSchemaPreview(value: GenerateSchemaResponse | null): SchemaPreview |
       archetypeId: readString(theme.archetypeId, "Unknown archetype"),
       accent: readString(tokens.accent, "#c8a24a"),
     },
+    checkoutTarget: readString(checkoutAction?.target, "No checkout target declared"),
   };
 }
 
@@ -226,6 +233,7 @@ export default function AppFactoryPage() {
   const [apiResponse, setApiResponse] = useState<GenerateSchemaResponse | null>(null);
   const [status, setStatus] = useState("Enter a product prompt and generate the internal schema.");
   const [copyStatus, setCopyStatus] = useState("");
+  const [previewCheckoutMessage, setPreviewCheckoutMessage] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const validationStatus = getValidationStatus(apiResponse?.validation);
   const schemaSummary = getSchemaSummary(apiResponse);
@@ -243,6 +251,7 @@ export default function AppFactoryPage() {
 
     setIsGenerating(true);
     setCopyStatus("");
+    setPreviewCheckoutMessage("");
     setStatus("Generating deterministic App Factory schema...");
 
     try {
@@ -301,6 +310,7 @@ export default function AppFactoryPage() {
     setPrompt("");
     setApiResponse(null);
     setCopyStatus("");
+    setPreviewCheckoutMessage("");
     setStatus("Enter a product prompt and generate the internal schema.");
   }
 
@@ -310,6 +320,12 @@ export default function AppFactoryPage() {
     }
 
     setPrompt(createImprovedPrompt(prompt));
+  }
+
+  function onPreviewStart() {
+    setPreviewCheckoutMessage(
+      `Checkout intent: ${schemaPreview?.checkoutTarget ?? "No checkout target declared"}`,
+    );
   }
 
   return (
@@ -506,10 +522,16 @@ export default function AppFactoryPage() {
                     </h3>
                     <button
                       type="button"
+                      onClick={onPreviewStart}
                       className="mt-5 border border-white/15 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-white"
                     >
                       {schemaPreview?.hero.ctaLabel ?? "Start"}
                     </button>
+                    {previewCheckoutMessage ? (
+                      <p className="mt-3 text-xs leading-6 text-[#c8a24a]">
+                        {previewCheckoutMessage}
+                      </p>
+                    ) : null}
                   </div>
 
                   <div className="grid gap-4 sm:grid-cols-2">
