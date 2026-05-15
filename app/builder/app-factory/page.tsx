@@ -105,6 +105,13 @@ export default function AppFactoryPage() {
     URL.revokeObjectURL(url);
   }
 
+  function onClear() {
+    setPrompt("");
+    setApiResponse(null);
+    setCopyStatus("");
+    setStatus("Enter a product prompt and generate the internal schema.");
+  }
+
   return (
     <main className="min-h-screen bg-[#030405] px-6 py-24 text-white sm:px-8 lg:px-10">
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-10">
@@ -135,14 +142,25 @@ export default function AppFactoryPage() {
             </label>
 
             <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <button
-                type="button"
-                onClick={onGenerate}
-                disabled={isGenerating}
-                className="inline-flex h-12 items-center justify-center bg-white px-6 text-xs font-semibold uppercase tracking-[0.18em] text-black transition hover:bg-white/85 disabled:cursor-not-allowed disabled:bg-white/25 disabled:text-white/45"
-              >
-                {isGenerating ? "Generating" : "Generate"}
-              </button>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={onGenerate}
+                  disabled={isGenerating}
+                  className="inline-flex h-12 items-center justify-center bg-white px-6 text-xs font-semibold uppercase tracking-[0.18em] text-black transition hover:bg-white/85 disabled:cursor-not-allowed disabled:bg-white/25 disabled:text-white/45"
+                >
+                  {isGenerating ? "Generating" : "Generate"}
+                </button>
+                {prompt || apiResponse ? (
+                  <button
+                    type="button"
+                    onClick={onClear}
+                    className="inline-flex h-12 items-center justify-center border border-white/15 px-6 text-xs font-semibold uppercase tracking-[0.18em] text-white transition hover:border-[#c8a24a]/70 hover:text-[#c8a24a]"
+                  >
+                    Clear
+                  </button>
+                ) : null}
+              </div>
               <p className="text-xs leading-6 text-white/45">{status}</p>
             </div>
           </section>
