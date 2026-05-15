@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { EMOVEL_THEME_PACKS_V0 } from "../../../lib/emovel/themes/theme-packs";
 
 interface GenerateSchemaResponse {
   success: boolean;
@@ -234,11 +235,17 @@ export default function AppFactoryPage() {
   const [status, setStatus] = useState("Enter a product prompt and generate the internal schema.");
   const [copyStatus, setCopyStatus] = useState("");
   const [previewCheckoutMessage, setPreviewCheckoutMessage] = useState("");
+  const [selectedThemePackId, setSelectedThemePackId] = useState(
+    EMOVEL_THEME_PACKS_V0[0]?.packId ?? "emovel-black-gold",
+  );
   const [isGenerating, setIsGenerating] = useState(false);
   const validationStatus = getValidationStatus(apiResponse?.validation);
   const schemaSummary = getSchemaSummary(apiResponse);
   const schemaPreview = getSchemaPreview(apiResponse);
   const promptQuality = getPromptQuality(prompt);
+  const selectedThemePack =
+    EMOVEL_THEME_PACKS_V0.find((themePack) => themePack.packId === selectedThemePackId) ??
+    EMOVEL_THEME_PACKS_V0[0];
 
   async function onGenerate() {
     const normalizedPrompt = prompt.trim();
@@ -396,6 +403,43 @@ export default function AppFactoryPage() {
               </div>
             </div>
 
+            <div className="mt-4 border border-white/10 bg-black/25 p-4">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-white/35">
+                  Theme Selector
+                </p>
+                <span className="text-xs uppercase tracking-[0.16em] text-[#c8a24a]">
+                  {selectedThemePack?.label ?? "EMOVEL Theme"}
+                </span>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {EMOVEL_THEME_PACKS_V0.map((themePack) => {
+                  const selected = themePack.packId === selectedThemePackId;
+
+                  return (
+                    <button
+                      key={themePack.packId}
+                      type="button"
+                      onClick={() => setSelectedThemePackId(themePack.packId)}
+                      className={`border px-3 py-2 text-left text-[0.65rem] font-semibold uppercase tracking-[0.14em] transition ${
+                        selected
+                          ? "border-[#c8a24a]/70 bg-white/[0.08] text-[#c8a24a]"
+                          : "border-white/10 bg-black/25 text-white/50 hover:border-[#c8a24a]/60 hover:text-[#c8a24a]"
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <span
+                          className="h-3 w-3 border border-white/20"
+                          style={{ backgroundColor: themePack.tokens.accent }}
+                        />
+                        {themePack.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex flex-wrap gap-3">
                 <button
@@ -513,22 +557,41 @@ export default function AppFactoryPage() {
                   Schema Preview
                 </p>
                 <div className="mt-4 grid gap-4">
-                  <div className="border border-white/10 bg-[#050505] p-4">
-                    <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-[#c8a24a]">
+                  <div
+                    className="border p-4"
+                    style={{
+                      backgroundColor: selectedThemePack?.tokens.background ?? "#050505",
+                      borderColor: selectedThemePack?.tokens.border ?? "rgba(255,255,255,0.1)",
+                    }}
+                  >
+                    <p
+                      className="text-[0.65rem] font-semibold uppercase tracking-[0.18em]"
+                      style={{ color: selectedThemePack?.tokens.accent ?? "#c8a24a" }}
+                    >
                       {schemaPreview?.hero.eyebrow ?? "EMOVEL App Factory"}
                     </p>
-                    <h3 className="mt-3 text-2xl font-semibold tracking-tight text-white">
+                    <h3
+                      className="mt-3 text-2xl font-semibold tracking-tight"
+                      style={{ color: selectedThemePack?.tokens.text ?? "#ffffff" }}
+                    >
                       {schemaPreview?.hero.headline ?? "Generated product system"}
                     </h3>
                     <button
                       type="button"
                       onClick={onPreviewStart}
-                      className="mt-5 border border-white/15 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-white"
+                      className="mt-5 border px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em]"
+                      style={{
+                        borderColor: selectedThemePack?.tokens.border ?? "rgba(255,255,255,0.15)",
+                        color: selectedThemePack?.tokens.text ?? "#ffffff",
+                      }}
                     >
                       {schemaPreview?.hero.ctaLabel ?? "Start"}
                     </button>
                     {previewCheckoutMessage ? (
-                      <p className="mt-3 text-xs leading-6 text-[#c8a24a]">
+                      <p
+                        className="mt-3 text-xs leading-6"
+                        style={{ color: selectedThemePack?.tokens.accent ?? "#c8a24a" }}
+                      >
                         {previewCheckoutMessage}
                       </p>
                     ) : null}
@@ -552,15 +615,22 @@ export default function AppFactoryPage() {
                         Theme
                       </p>
                       <p className="mt-3 text-sm text-white">
-                        {schemaPreview?.theme.packId ?? "Unknown theme pack"}
+                        {selectedThemePack?.packId ?? schemaPreview?.theme.packId ?? "Unknown theme pack"}
                       </p>
                       <p className="mt-2 text-xs text-white/50">
-                        {schemaPreview?.theme.archetypeId ?? "Unknown archetype"}
+                        {selectedThemePack?.archetypeId ??
+                          schemaPreview?.theme.archetypeId ??
+                          "Unknown archetype"}
                       </p>
                       <div className="mt-4 flex items-center gap-3">
                         <span
                           className="h-5 w-5 border border-white/20"
-                          style={{ backgroundColor: schemaPreview?.theme.accent ?? "#c8a24a" }}
+                          style={{
+                            backgroundColor:
+                              selectedThemePack?.tokens.accent ??
+                              schemaPreview?.theme.accent ??
+                              "#c8a24a",
+                          }}
                         />
                         <span className="text-xs uppercase tracking-[0.16em] text-white/45">
                           Accent
