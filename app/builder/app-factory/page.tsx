@@ -17,6 +17,34 @@ interface ValidationStatus {
 const defaultPrompt =
   "Create a premium EMOVEL product page for a founder-focused prompt system with a clear offer, Gumroad checkout intent, and a concise QA checklist.";
 
+const promptPresets = [
+  {
+    label: "Premium prompt pack product page",
+    prompt:
+      "Create a premium product page for an EMOVEL prompt pack, targeting founders who need repeatable AI workflows, with a clear offer, Gumroad checkout intent, proof sections, and QA checklist.",
+  },
+  {
+    label: "Creator dashboard app",
+    prompt:
+      "Create a creator dashboard app for managing content ideas, product assets, publishing priorities, audience segments, and monetization actions in a premium dark EMOVEL interface.",
+  },
+  {
+    label: "Digital template shop",
+    prompt:
+      "Create a digital template shop for selling premium Notion, prompt, and business system templates, with product categories, offer cards, checkout intent, and export-ready schema structure.",
+  },
+  {
+    label: "Founder authority landing page",
+    prompt:
+      "Create a founder authority landing page that positions a premium expert offer, explains the mechanism, captures qualified leads, and supports a strong commercial CTA.",
+  },
+  {
+    label: "Mobile app blueprint",
+    prompt:
+      "Create a mobile app blueprint for a premium productivity product, including audience, monetization, screen map, component map, theme pack, actions, data model, and QA checklist.",
+  },
+] as const;
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
@@ -133,6 +161,18 @@ export default function AppFactoryPage() {
               <span className="text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-white/45">
                 Product Prompt
               </span>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {promptPresets.map((preset) => (
+                  <button
+                    key={preset.label}
+                    type="button"
+                    onClick={() => setPrompt(preset.prompt)}
+                    className="border border-white/10 bg-black/25 px-3 py-2 text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-white/50 transition hover:border-[#c8a24a]/60 hover:text-[#c8a24a]"
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
               <textarea
                 value={prompt}
                 onChange={(event) => setPrompt(event.target.value)}
