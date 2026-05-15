@@ -14,6 +14,13 @@ interface ValidationStatus {
   errors: unknown[];
 }
 
+interface SchemaSummary {
+  projectName: string;
+  category: string;
+  screenCount: number;
+  componentCount: number;
+}
+
 const defaultPrompt =
   "Create a premium EMOVEL product page for a founder-focused prompt system with a clear offer, Gumroad checkout intent, and a concise QA checklist.";
 
@@ -60,6 +67,29 @@ function getValidationStatus(value: unknown): ValidationStatus | null {
   };
 }
 
+function getSchemaSummary(value: GenerateSchemaResponse | null): SchemaSummary | null {
+  if (!value || !isRecord(value.result)) {
+    return null;
+  }
+
+  const schema = value.result.schema;
+
+  if (!isRecord(schema)) {
+    return null;
+  }
+
+  const project = isRecord(schema.project) ? schema.project : {};
+  const screens = Array.isArray(schema.screens) ? schema.screens : [];
+  const components = Array.isArray(schema.components) ? schema.components : [];
+
+  return {
+    projectName: typeof project.name === "string" && project.name.trim() ? project.name : "Untitled",
+    category: typeof project.category === "string" && project.category.trim() ? project.category : "unknown",
+    screenCount: screens.length,
+    componentCount: components.length,
+  };
+}
+
 export default function AppFactoryPage() {
   const [prompt, setPrompt] = useState(defaultPrompt);
   const [apiResponse, setApiResponse] = useState<GenerateSchemaResponse | null>(null);
@@ -67,6 +97,7 @@ export default function AppFactoryPage() {
   const [copyStatus, setCopyStatus] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const validationStatus = getValidationStatus(apiResponse?.validation);
+  const schemaSummary = getSchemaSummary(apiResponse);
 
   async function onGenerate() {
     const normalizedPrompt = prompt.trim();
@@ -246,6 +277,49 @@ export default function AppFactoryPage() {
                     {copyStatus}
                   </span>
                 ) : null}
+              </div>
+            ) : null}
+
+            {apiResponse ? (
+              <div className="mt-5 grid gap-3 border border-white/10 bg-white/[0.035] p-4 text-sm text-white/65 sm:grid-cols-2">
+                <div>
+                  <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-white/35">
+                    Project
+                  </p>
+                  <p className="mt-2 text-white">{schemaSummary?.projectName ?? "Unavailable"}</p>
+                </div>
+                <div>
+                  <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-white/35">
+                    Category
+                  </p>
+                  <p className="mt-2 text-white">{schemaSummary?.category ?? "Unavailable"}</p>
+                </div>
+                <div>
+                  <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-white/35">
+                    Screens
+                  </p>
+                  <p className="mt-2 text-white">{schemaSummary?.screenCount ?? 0}</p>
+                </div>
+                <div>
+                  <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-white/35">
+                    Components
+                  </p>
+                  <p className="mt-2 text-white">{schemaSummary?.componentCount ?? 0}</p>
+                </div>
+                <div>
+                  <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-white/35">
+                    Validation
+                  </p>
+                  <p className="mt-2 text-white">
+                    {validationStatus ? (validationStatus.valid ? "valid" : "invalid") : "unknown"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-white/35">
+                    Errors
+                  </p>
+                  <p className="mt-2 text-white">{validationStatus?.errors.length ?? 0}</p>
+                </div>
               </div>
             ) : null}
 
