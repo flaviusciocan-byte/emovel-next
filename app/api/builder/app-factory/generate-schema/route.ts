@@ -1,4 +1,5 @@
 import { createAppFactorySchemaWithAIAdapterV0 } from "../../../../../lib/emovel/ai/app-factory-ai-adapter";
+import { validateEmovelAppSchemaV0 } from "../../../../../lib/emovel/schema/validate-app-schema.v0";
 
 interface GenerateSchemaRequestBody {
   prompt?: unknown;
@@ -34,9 +35,11 @@ export async function POST(request: Request) {
   const result = createAppFactorySchemaWithAIAdapterV0({
     prompt: body.prompt,
   });
+  const validation = validateEmovelAppSchemaV0(result.schema);
 
   return Response.json({
     success: true,
     result,
+    validation,
   });
 }
