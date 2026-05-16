@@ -707,7 +707,7 @@ export default function AppFactoryPage() {
                         color: selectedThemePack?.tokens.text ?? "#ffffff",
                       }}
                     >
-                      {schemaPreview?.hero.ctaLabel ?? "Start"}
+                      Preview Checkout Intent
                     </button>
                     {previewCheckoutMessage ? (
                       <p
