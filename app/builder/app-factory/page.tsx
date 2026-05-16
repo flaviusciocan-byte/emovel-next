@@ -245,6 +245,22 @@ function getDataModelPreviewList(response: GenerateSchemaResponse | null) {
     };
   });
 }
+function getExportTargetsPreviewList(response: GenerateSchemaResponse | null) {
+  const schema = isRecord(response?.result) && isRecord(response.result.schema) ? response.result.schema : null;
+
+  if (!schema) {
+    return [];
+  }
+
+  const exportTargets = Array.isArray(schema.exportTargets) ? schema.exportTargets : [];
+
+  return exportTargets.filter(isRecord).map((exportTarget, index) => ({
+    id: readString(exportTarget.id, `export-target-${index + 1}`),
+    target: readString(exportTarget.target, `Export target ${index + 1}`),
+    enabled: typeof exportTarget.enabled === "boolean" ? exportTarget.enabled : false,
+    notes: readString(exportTarget.notes, "No notes defined."),
+  }));
+}
 function getPromptQuality(value: string): PromptQuality {
   const normalized = value.trim();
   const lowered = normalized.toLowerCase();
@@ -305,6 +321,7 @@ export default function AppFactoryPage() {
   const componentPreviewList = getComponentPreviewList(apiResponse);
   const actionsPreviewList = getActionsPreviewList(apiResponse);
   const dataModelPreviewList = getDataModelPreviewList(apiResponse);
+  const exportTargetsPreviewList = getExportTargetsPreviewList(apiResponse);
   const promptQuality = getPromptQuality(prompt);
   const selectedThemePack =
     EMOVEL_THEME_PACKS_V0.find((themePack) => themePack.packId === selectedThemePackId) ??
@@ -770,6 +787,26 @@ export default function AppFactoryPage() {
                           </div>
                         ))}
                       </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+            {apiResponse && exportTargetsPreviewList.length > 0 ? (
+              <div className="mt-5 border border-white/10 bg-black/25 p-4">
+                <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-white/35">
+                  Export Targets Preview List
+                </p>
+                <div className="mt-4 grid gap-3">
+                  {exportTargetsPreviewList.map((exportTarget) => (
+                    <div key={exportTarget.id} className="border border-white/10 bg-white/[0.035] p-4">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <p className="text-sm font-semibold text-white">{exportTarget.target}</p>
+                        <span className="text-[0.65rem] uppercase tracking-[0.16em] text-[#c8a24a]">
+                          {exportTarget.enabled ? "enabled" : "disabled"}
+                        </span>
+                      </div>
+                      <p className="mt-3 text-sm leading-6 text-white/60">{exportTarget.notes}</p>
                     </div>
                   ))}
                 </div>
