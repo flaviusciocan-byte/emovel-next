@@ -327,6 +327,7 @@ export default function AppFactoryPage() {
   const [apiResponse, setApiResponse] = useState<GenerateSchemaResponse | null>(null);
   const [status, setStatus] = useState("Enter a product prompt and generate the internal schema.");
   const [copyStatus, setCopyStatus] = useState("");
+  const [outputTab, setOutputTab] = useState<"Preview" | "JSON">("Preview");
   const [previewCheckoutMessage, setPreviewCheckoutMessage] = useState("");
   const [selectedThemePackId, setSelectedThemePackId] = useState(
     EMOVEL_THEME_PACKS_V0[0]?.packId ?? "emovel-black-gold",
@@ -582,7 +583,28 @@ export default function AppFactoryPage() {
               </div>
             ) : null}
 
-            {apiResponse ? (
+            <div className="mt-5 flex flex-wrap gap-2 border-b border-white/10">
+              {(["Preview", "JSON"] as const).map((tab) => {
+                const selected = outputTab === tab;
+
+                return (
+                  <button
+                    key={tab}
+                    type="button"
+                    onClick={() => setOutputTab(tab)}
+                    className={`border-b px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] transition ${
+                      selected
+                        ? "border-[#c8a24a] text-[#c8a24a]"
+                        : "border-transparent text-white/45 hover:text-white"
+                    }`}
+                  >
+                    {tab}
+                  </button>
+                );
+              })}
+            </div>
+
+            {outputTab === "JSON" && apiResponse ? (
               <div className="mt-5 flex flex-wrap items-center gap-3">
                 <button
                   type="button"
@@ -606,6 +628,8 @@ export default function AppFactoryPage() {
               </div>
             ) : null}
 
+            {outputTab === "Preview" ? (
+              <>
             {apiResponse ? (
               <div className="mt-5 grid gap-3 border border-white/10 bg-white/[0.035] p-4 text-sm text-white/65 sm:grid-cols-2">
                 <div>
@@ -853,11 +877,16 @@ export default function AppFactoryPage() {
                 </div>
               </div>
             ) : null}
-            <pre className="mt-6 max-h-[640px] min-h-72 max-w-full overflow-auto border border-white/10 bg-[#050505] p-4 text-xs leading-6 text-white/60">
+              </>
+            ) : null}
+
+            {outputTab === "JSON" ? (
+              <pre className="mt-6 max-h-[640px] min-h-72 max-w-full overflow-auto border border-white/10 bg-[#050505] p-4 text-xs leading-6 text-white/60">
               {apiResponse
                 ? JSON.stringify(apiResponse, null, 2)
                 : "{\n  \"status\": \"Waiting for generation\"\n}"}
-            </pre>
+              </pre>
+            ) : null}
           </section>
         </div>
       </section>
