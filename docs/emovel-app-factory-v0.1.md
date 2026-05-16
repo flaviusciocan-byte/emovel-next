@@ -127,3 +127,20 @@ Rule:
 Preview lists are read-only.
 They do not generate code yet.
 They help validate the schema visually before future export, editor or runtime layers.
+
+## Checkout Preview Button Update
+
+The Schema Preview checkout button was clarified.
+
+Behavior:
+
+- The visual button label is now `Preview Checkout Intent`.
+- The button does not open external links.
+- On click, it displays the current checkout target placeholder.
+- Current placeholder: `gumroad-product-url-placeholder`.
+
+Rule:
+
+This is not a real checkout integration yet.
+It is a preview of checkout intent only.
+Real checkout activation will come later through a configured checkout URL or integration layer.
