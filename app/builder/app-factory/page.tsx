@@ -219,6 +219,32 @@ function getActionsPreviewList(response: GenerateSchemaResponse | null) {
     sourceScreenId: readString(action.sourceScreenId, "unknown"),
   }));
 }
+function getDataModelPreviewList(response: GenerateSchemaResponse | null) {
+  const schema = isRecord(response?.result) && isRecord(response.result.schema) ? response.result.schema : null;
+
+  if (!schema) {
+    return [];
+  }
+
+  const dataModel = isRecord(schema.dataModel) ? schema.dataModel : null;
+  const entities = Array.isArray(dataModel?.entities) ? dataModel.entities : [];
+
+  return entities.filter(isRecord).map((entity, index) => {
+    const fields = Array.isArray(entity.fields) ? entity.fields : [];
+
+    return {
+      id: readString(entity.id, `entity-${index + 1}`),
+      name: readString(entity.name, `Entity ${index + 1}`),
+      description: readString(entity.description, "No description defined."),
+      fields: fields.filter(isRecord).map((field, fieldIndex) => ({
+        id: readString(field.id, `field-${fieldIndex + 1}`),
+        name: readString(field.name, `field_${fieldIndex + 1}`),
+        type: readString(field.type, "unknown"),
+        required: typeof field.required === "boolean" ? field.required : false,
+      })),
+    };
+  });
+}
 function getPromptQuality(value: string): PromptQuality {
   const normalized = value.trim();
   const lowered = normalized.toLowerCase();
@@ -278,6 +304,7 @@ export default function AppFactoryPage() {
   const schemaPreview = getSchemaPreview(apiResponse);
   const componentPreviewList = getComponentPreviewList(apiResponse);
   const actionsPreviewList = getActionsPreviewList(apiResponse);
+  const dataModelPreviewList = getDataModelPreviewList(apiResponse);
   const promptQuality = getPromptQuality(prompt);
   const selectedThemePack =
     EMOVEL_THEME_PACKS_V0.find((themePack) => themePack.packId === selectedThemePackId) ??
@@ -714,6 +741,35 @@ export default function AppFactoryPage() {
                       </div>
                       <p className="mt-2 text-xs text-white/45">Screen: {action.sourceScreenId}</p>
                       <p className="mt-3 text-sm leading-6 text-white/60">Target: {action.target}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+            {apiResponse && dataModelPreviewList.length > 0 ? (
+              <div className="mt-5 border border-white/10 bg-black/25 p-4">
+                <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-white/35">
+                  Data Model Preview List
+                </p>
+                <div className="mt-4 grid gap-3">
+                  {dataModelPreviewList.map((entity) => (
+                    <div key={entity.id} className="border border-white/10 bg-white/[0.035] p-4">
+                      <p className="text-sm font-semibold text-white">{entity.name}</p>
+                      <p className="mt-3 text-sm leading-6 text-white/60">{entity.description}</p>
+                      <div className="mt-4 grid gap-2">
+                        {entity.fields.map((field) => (
+                          <div
+                            key={field.id}
+                            className="grid gap-2 border border-white/10 bg-black/20 p-3 text-xs text-white/55 sm:grid-cols-[1fr_0.75fr_auto]"
+                          >
+                            <span className="font-semibold text-white">{field.name}</span>
+                            <span>{field.type}</span>
+                            <span className="uppercase tracking-[0.16em] text-[#c8a24a]">
+                              {field.required ? "required" : "optional"}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   ))}
                 </div>
