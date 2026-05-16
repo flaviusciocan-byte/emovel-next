@@ -261,6 +261,23 @@ function getExportTargetsPreviewList(response: GenerateSchemaResponse | null) {
     notes: readString(exportTarget.notes, "No notes defined."),
   }));
 }
+function getQaChecklistPreviewList(response: GenerateSchemaResponse | null) {
+  const schema = isRecord(response?.result) && isRecord(response.result.schema) ? response.result.schema : null;
+
+  if (!schema) {
+    return [];
+  }
+
+  const qaChecklist = Array.isArray(schema.qaChecklist) ? schema.qaChecklist : [];
+
+  return qaChecklist.filter(isRecord).map((qaItem, index) => ({
+    id: readString(qaItem.id, `qa-item-${index + 1}`),
+    label: readString(qaItem.label, `QA item ${index + 1}`),
+    status: readString(qaItem.status, "unknown"),
+    severity: readString(qaItem.severity, "unknown"),
+    owner: readString(qaItem.owner, "unassigned"),
+  }));
+}
 function getPromptQuality(value: string): PromptQuality {
   const normalized = value.trim();
   const lowered = normalized.toLowerCase();
@@ -322,6 +339,7 @@ export default function AppFactoryPage() {
   const actionsPreviewList = getActionsPreviewList(apiResponse);
   const dataModelPreviewList = getDataModelPreviewList(apiResponse);
   const exportTargetsPreviewList = getExportTargetsPreviewList(apiResponse);
+  const qaChecklistPreviewList = getQaChecklistPreviewList(apiResponse);
   const promptQuality = getPromptQuality(prompt);
   const selectedThemePack =
     EMOVEL_THEME_PACKS_V0.find((themePack) => themePack.packId === selectedThemePackId) ??
@@ -807,6 +825,29 @@ export default function AppFactoryPage() {
                         </span>
                       </div>
                       <p className="mt-3 text-sm leading-6 text-white/60">{exportTarget.notes}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+            {apiResponse && qaChecklistPreviewList.length > 0 ? (
+              <div className="mt-5 border border-white/10 bg-black/25 p-4">
+                <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-white/35">
+                  QA Checklist Preview List
+                </p>
+                <div className="mt-4 grid gap-3">
+                  {qaChecklistPreviewList.map((qaItem) => (
+                    <div key={qaItem.id} className="border border-white/10 bg-white/[0.035] p-4">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <p className="text-sm font-semibold text-white">{qaItem.label}</p>
+                        <span className="text-[0.65rem] uppercase tracking-[0.16em] text-[#c8a24a]">
+                          {qaItem.status}
+                        </span>
+                      </div>
+                      <div className="mt-3 flex flex-wrap gap-3 text-xs text-white/50">
+                        <span>Severity: {qaItem.severity}</span>
+                        <span>Owner: {qaItem.owner}</span>
+                      </div>
                     </div>
                   ))}
                 </div>
