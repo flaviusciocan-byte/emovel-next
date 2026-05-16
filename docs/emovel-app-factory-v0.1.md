@@ -100,3 +100,30 @@ Behavior:
 Rule:
 
 Theme packs are EMOVEL-owned. External systems may be used only as reference, not copied directly.
+
+## Preview Lists Update
+
+EMOVEL App Factory now includes visual preview lists for the generated schema.
+
+Current preview sections:
+
+- Schema Preview
+- Component Preview List
+- Actions Preview List
+- Data Model Preview List
+- Export Targets Preview List
+- QA Checklist Preview List
+
+Behavior:
+
+- Components show name, type, screenId and purpose.
+- Actions show label, type, source screen and target.
+- Data model shows entities and fields.
+- Export targets show target, enabled/disabled state and notes.
+- QA checklist shows label, status, severity and owner.
+
+Rule:
+
+Preview lists are read-only.
+They do not generate code yet.
+They help validate the schema visually before future export, editor or runtime layers.
