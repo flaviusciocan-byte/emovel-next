@@ -447,13 +447,13 @@ export default function AppFactoryPage() {
       <section className="mx-auto flex w-full max-w-7xl flex-col gap-6">
         <div className="max-w-3xl">
           <p className="text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-[#c8a24a]">
-            Builder Module
+            EMOVEL APP FACTORY
           </p>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-            App Factory
+          <h1 className="mt-3 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+            What do you want to build?
           </h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/55">
-            Generate structured app schemas from prompts.
+            Turn a rough idea into a structured product, page, app, or offer system.
           </p>
         </div>
 
