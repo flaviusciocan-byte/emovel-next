@@ -459,15 +459,18 @@ export default function AppFactoryPage() {
           <aside className="h-fit border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/30 sm:p-5 lg:sticky lg:top-6">
             <div>
               <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-white/35">
-                Preset Prompt Selector
+                Prompt Blocks
               </p>
-              <div className="mt-3 grid gap-2">
+              <p className="mt-2 text-xs leading-5 text-white/45">
+                Choose a starting block for the prompt canvas.
+              </p>
+              <div className="mt-3 grid gap-1.5">
                 {promptPresets.map((preset) => (
                   <button
                     key={preset.label}
                     type="button"
                     onClick={() => setPrompt(preset.prompt)}
-                    className="border border-white/10 bg-black/30 px-3 py-2.5 text-left text-[0.62rem] font-semibold uppercase tracking-[0.1em] text-white/55 transition hover:border-[#c8a24a]/60 hover:text-[#c8a24a]"
+                    className="border border-white/10 bg-black/25 px-3 py-2 text-left text-[0.62rem] font-semibold uppercase tracking-[0.1em] text-white/55 transition hover:border-[#c8a24a]/60 hover:bg-white/[0.035] hover:text-[#c8a24a]"
                   >
                     {preset.label}
                   </button>
