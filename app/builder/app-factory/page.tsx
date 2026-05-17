@@ -441,8 +441,8 @@ export default function AppFactoryPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#030405] px-6 py-24 text-white sm:px-8 lg:px-10">
-      <section className="mx-auto flex w-full max-w-6xl flex-col gap-10">
+    <main className="min-h-screen bg-[#030405] px-5 py-16 text-white sm:px-8 lg:px-10">
+      <section className="mx-auto flex w-full max-w-7xl flex-col gap-8">
         <div className="max-w-3xl">
           <p className="text-sm font-medium uppercase tracking-[0.42em] text-[#c8a24a]">
             EMOVEL APP FACTORY
@@ -455,19 +455,19 @@ export default function AppFactoryPage() {
           </p>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[18rem_minmax(0,1fr)]">
-          <aside className="h-fit border border-white/10 bg-white/[0.035] p-4 sm:p-5 lg:sticky lg:top-6">
+        <div className="grid gap-6 lg:grid-cols-[17.5rem_minmax(0,1fr)]">
+          <aside className="h-fit border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/30 sm:p-5 lg:sticky lg:top-6">
             <div>
               <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-white/35">
                 Preset Prompt Selector
               </p>
-              <div className="mt-4 grid gap-2">
+              <div className="mt-3 grid gap-2">
                 {promptPresets.map((preset) => (
                   <button
                     key={preset.label}
                     type="button"
                     onClick={() => setPrompt(preset.prompt)}
-                    className="border border-white/10 bg-black/25 px-3 py-3 text-left text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-white/50 transition hover:border-[#c8a24a]/60 hover:text-[#c8a24a]"
+                    className="border border-white/10 bg-black/30 px-3 py-2.5 text-left text-[0.62rem] font-semibold uppercase tracking-[0.1em] text-white/55 transition hover:border-[#c8a24a]/60 hover:text-[#c8a24a]"
                   >
                     {preset.label}
                   </button>
@@ -475,7 +475,7 @@ export default function AppFactoryPage() {
               </div>
             </div>
 
-            <div className="mt-5 border-t border-white/10 pt-5">
+            <div className="mt-4 border-t border-white/10 pt-4">
               <div className="flex flex-col gap-2">
                 <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-white/35">
                   Theme Selector
@@ -484,7 +484,7 @@ export default function AppFactoryPage() {
                   {selectedThemePack?.label ?? "EMOVEL Theme"}
                 </span>
               </div>
-              <div className="mt-4 grid gap-2">
+              <div className="mt-3 grid gap-2">
                 {EMOVEL_THEME_PACKS_V0.map((themePack) => {
                   const selected = themePack.packId === selectedThemePackId;
 
@@ -493,7 +493,7 @@ export default function AppFactoryPage() {
                       key={themePack.packId}
                       type="button"
                       onClick={() => setSelectedThemePackId(themePack.packId)}
-                      className={`border px-3 py-2 text-left text-[0.65rem] font-semibold uppercase tracking-[0.12em] transition ${
+                      className={`border px-3 py-2 text-left text-[0.62rem] font-semibold uppercase tracking-[0.1em] transition ${
                         selected
                           ? "border-[#c8a24a]/70 bg-white/[0.08] text-[#c8a24a]"
                           : "border-white/10 bg-black/25 text-white/50 hover:border-[#c8a24a]/60 hover:text-[#c8a24a]"
@@ -512,7 +512,7 @@ export default function AppFactoryPage() {
               </div>
             </div>
 
-            <div className="mt-5 border-t border-white/10 pt-5">
+            <div className="mt-4 border-t border-white/10 pt-4">
               <div className="flex items-center justify-between gap-3">
                 <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-white/35">
                   Prompt Quality Notes
@@ -521,14 +521,14 @@ export default function AppFactoryPage() {
                   {promptQuality.status}
                 </span>
               </div>
-              <div className="mt-3 grid gap-2 text-xs leading-6 text-white/55">
+              <div className="mt-3 grid gap-2 text-xs leading-5 text-white/55">
                 {promptQuality.notes.map((note) => (
                   <p key={note}>{note}</p>
                 ))}
               </div>
             </div>
 
-            <div className="mt-5 grid gap-2 border-t border-white/10 pt-5">
+            <div className="mt-4 grid gap-2 border-t border-white/10 pt-4">
               {(prompt || apiResponse) ? (
                 <button
                   type="button"
@@ -565,7 +565,7 @@ export default function AppFactoryPage() {
           </aside>
 
           <section className="min-w-0">
-            <div className="border border-white/10 bg-black/35 p-5 sm:p-7">
+            <div className="border border-white/10 bg-black/40 p-5 shadow-2xl shadow-black/35 sm:p-8">
               <label className="block">
                 <span className="text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-white/45">
                   Product Prompt
@@ -573,7 +573,7 @@ export default function AppFactoryPage() {
                 <textarea
                   value={prompt}
                   onChange={(event) => setPrompt(event.target.value)}
-                  className="mt-4 min-h-[360px] w-full resize-none border border-white/10 bg-[#050505] px-5 py-5 text-base leading-8 text-white outline-none transition placeholder:text-white/25 focus:border-[#c8a24a]/70"
+                  className="mt-5 min-h-[420px] w-full resize-none border border-white/10 bg-[#050505] px-6 py-6 text-base leading-8 text-white outline-none transition placeholder:text-white/25 focus:border-[#c8a24a]/70"
                   placeholder="Describe the app, audience, offer, screens, and commercial intent."
                 />
               </label>
@@ -613,13 +613,13 @@ export default function AppFactoryPage() {
               </div>
             </div>
 
-            <div className="mt-6 border border-white/10 bg-black/35 p-5 sm:p-6">
+            <div className="mt-6 border border-white/10 bg-black/35 p-4 sm:p-5">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-white/45">
                   JSON Result
                 </p>
-                <h2 className="mt-3 text-xl font-semibold text-white">Generated schema output</h2>
+                <h2 className="mt-2 text-lg font-semibold text-white">Generated schema output</h2>
               </div>
               <span className="text-xs uppercase tracking-[0.18em] text-[#c8a24a]">
                 deterministic
@@ -627,13 +627,13 @@ export default function AppFactoryPage() {
             </div>
 
             {validationStatus ? (
-              <div className="mt-5 border border-white/10 bg-white/[0.035] px-4 py-3 text-xs uppercase tracking-[0.16em] text-white/60">
+              <div className="mt-4 border border-white/10 bg-white/[0.035] px-4 py-3 text-xs uppercase tracking-[0.16em] text-white/60">
                 Validation: {validationStatus.valid ? "valid" : "invalid"} · Errors:{" "}
                 {validationStatus.errors.length}
               </div>
             ) : null}
 
-            <div className="mt-5 flex flex-wrap gap-2 border-b border-white/10">
+            <div className="mt-4 flex flex-wrap gap-2 border-b border-white/10">
               {(["Preview", "JSON"] as const).map((tab) => {
                 const selected = outputTab === tab;
 
@@ -681,7 +681,7 @@ export default function AppFactoryPage() {
             {outputTab === "Preview" ? (
               <>
             {apiResponse ? (
-              <div className="mt-5 grid gap-3 border border-white/10 bg-white/[0.035] p-4 text-sm text-white/65 sm:grid-cols-2">
+              <div className="mt-4 grid gap-3 border border-white/10 bg-white/[0.035] p-3 text-sm text-white/65 sm:grid-cols-3">
                 <div>
                   <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-white/35">
                     Project
@@ -728,7 +728,7 @@ export default function AppFactoryPage() {
                 <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-white/35">
                   Schema Preview
                 </p>
-                <div className="mt-4 grid gap-4">
+                <div className="mt-3 grid gap-3">
                   <div
                     className="border p-4"
                     style={{
@@ -743,7 +743,7 @@ export default function AppFactoryPage() {
                       {schemaPreview?.hero.eyebrow ?? "EMOVEL App Factory"}
                     </p>
                     <h3
-                      className="mt-3 text-2xl font-semibold tracking-tight"
+                      className="mt-3 text-xl font-semibold tracking-tight sm:text-2xl"
                       style={{ color: selectedThemePack?.tokens.text ?? "#ffffff" }}
                     >
                       {schemaPreview?.hero.headline ?? "Generated product system"}
@@ -751,7 +751,7 @@ export default function AppFactoryPage() {
                     <button
                       type="button"
                       onClick={onPreviewStart}
-                      className="mt-5 border px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em]"
+                      className="mt-4 border px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em]"
                       style={{
                         borderColor: selectedThemePack?.tokens.border ?? "rgba(255,255,255,0.15)",
                         color: selectedThemePack?.tokens.text ?? "#ffffff",
@@ -769,12 +769,12 @@ export default function AppFactoryPage() {
                     ) : null}
                   </div>
 
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="border border-white/10 bg-white/[0.035] p-4">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="border border-white/10 bg-white/[0.035] p-3">
                       <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-white/35">
                         Offer
                       </p>
-                      <p className="mt-3 text-lg font-semibold text-white">
+                      <p className="mt-2 text-base font-semibold text-white">
                         {schemaPreview?.offer.title ?? "Primary Offer"}
                       </p>
                       <p className="mt-2 text-sm text-[#c8a24a]">
@@ -782,7 +782,7 @@ export default function AppFactoryPage() {
                       </p>
                     </div>
 
-                    <div className="border border-white/10 bg-white/[0.035] p-4">
+                    <div className="border border-white/10 bg-white/[0.035] p-3">
                       <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-white/35">
                         Theme
                       </p>
@@ -814,13 +814,13 @@ export default function AppFactoryPage() {
               </div>
             ) : null}
             {componentPreviewList.length > 0 ? (
-              <div className="mt-5 border border-white/10 bg-black/25 p-4">
+              <div className="mt-4 border border-white/10 bg-black/25 p-4">
                 <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-white/35">
                   Component Preview List
                 </p>
-                <div className="mt-4 grid gap-3">
+                <div className="mt-3 grid max-h-80 gap-2 overflow-auto pr-1 md:grid-cols-2">
                   {componentPreviewList.map((component) => (
-                    <div key={component.id} className="border border-white/10 bg-white/[0.035] p-4">
+                    <div key={component.id} className="border border-white/10 bg-white/[0.035] p-3">
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <p className="text-sm font-semibold text-white">{component.name}</p>
                         <span className="text-[0.65rem] uppercase tracking-[0.16em] text-[#c8a24a]">
@@ -828,20 +828,20 @@ export default function AppFactoryPage() {
                         </span>
                       </div>
                       <p className="mt-2 text-xs text-white/45">Screen: {component.screenId}</p>
-                      <p className="mt-3 text-sm leading-6 text-white/60">{component.purpose}</p>
+                      <p className="mt-2 text-xs leading-5 text-white/60">{component.purpose}</p>
                     </div>
                   ))}
                 </div>
               </div>
             ) : null}
             {actionsPreviewList.length > 0 ? (
-              <div className="mt-5 border border-white/10 bg-black/25 p-4">
+              <div className="mt-4 border border-white/10 bg-black/25 p-4">
                 <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-white/35">
                   Actions Preview List
                 </p>
-                <div className="mt-4 grid gap-3">
+                <div className="mt-3 grid max-h-72 gap-2 overflow-auto pr-1 md:grid-cols-2">
                   {actionsPreviewList.map((action) => (
-                    <div key={action.id} className="border border-white/10 bg-white/[0.035] p-4">
+                    <div key={action.id} className="border border-white/10 bg-white/[0.035] p-3">
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <p className="text-sm font-semibold text-white">{action.label}</p>
                         <span className="text-[0.65rem] uppercase tracking-[0.16em] text-[#c8a24a]">
@@ -849,27 +849,27 @@ export default function AppFactoryPage() {
                         </span>
                       </div>
                       <p className="mt-2 text-xs text-white/45">Screen: {action.sourceScreenId}</p>
-                      <p className="mt-3 text-sm leading-6 text-white/60">Target: {action.target}</p>
+                      <p className="mt-2 text-xs leading-5 text-white/60">Target: {action.target}</p>
                     </div>
                   ))}
                 </div>
               </div>
             ) : null}
             {apiResponse && dataModelPreviewList.length > 0 ? (
-              <div className="mt-5 border border-white/10 bg-black/25 p-4">
+              <div className="mt-4 border border-white/10 bg-black/25 p-4">
                 <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-white/35">
                   Data Model Preview List
                 </p>
-                <div className="mt-4 grid gap-3">
+                <div className="mt-3 grid max-h-96 gap-2 overflow-auto pr-1 xl:grid-cols-2">
                   {dataModelPreviewList.map((entity) => (
-                    <div key={entity.id} className="border border-white/10 bg-white/[0.035] p-4">
+                    <div key={entity.id} className="border border-white/10 bg-white/[0.035] p-3">
                       <p className="text-sm font-semibold text-white">{entity.name}</p>
-                      <p className="mt-3 text-sm leading-6 text-white/60">{entity.description}</p>
-                      <div className="mt-4 grid gap-2">
+                      <p className="mt-2 text-xs leading-5 text-white/60">{entity.description}</p>
+                      <div className="mt-3 grid gap-1.5">
                         {entity.fields.map((field) => (
                           <div
                             key={field.id}
-                            className="grid gap-2 border border-white/10 bg-black/20 p-3 text-xs text-white/55 sm:grid-cols-[1fr_0.75fr_auto]"
+                            className="grid gap-2 border border-white/10 bg-black/20 p-2 text-xs text-white/55 sm:grid-cols-[1fr_0.75fr_auto]"
                           >
                             <span className="font-semibold text-white">{field.name}</span>
                             <span>{field.type}</span>
@@ -885,33 +885,33 @@ export default function AppFactoryPage() {
               </div>
             ) : null}
             {apiResponse && exportTargetsPreviewList.length > 0 ? (
-              <div className="mt-5 border border-white/10 bg-black/25 p-4">
+              <div className="mt-4 border border-white/10 bg-black/25 p-4">
                 <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-white/35">
                   Export Targets Preview List
                 </p>
-                <div className="mt-4 grid gap-3">
+                <div className="mt-3 grid max-h-72 gap-2 overflow-auto pr-1 md:grid-cols-2">
                   {exportTargetsPreviewList.map((exportTarget) => (
-                    <div key={exportTarget.id} className="border border-white/10 bg-white/[0.035] p-4">
+                    <div key={exportTarget.id} className="border border-white/10 bg-white/[0.035] p-3">
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <p className="text-sm font-semibold text-white">{exportTarget.target}</p>
                         <span className="text-[0.65rem] uppercase tracking-[0.16em] text-[#c8a24a]">
                           {exportTarget.enabled ? "enabled" : "disabled"}
                         </span>
                       </div>
-                      <p className="mt-3 text-sm leading-6 text-white/60">{exportTarget.notes}</p>
+                      <p className="mt-2 text-xs leading-5 text-white/60">{exportTarget.notes}</p>
                     </div>
                   ))}
                 </div>
               </div>
             ) : null}
             {apiResponse && qaChecklistPreviewList.length > 0 ? (
-              <div className="mt-5 border border-white/10 bg-black/25 p-4">
+              <div className="mt-4 border border-white/10 bg-black/25 p-4">
                 <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-white/35">
                   QA Checklist Preview List
                 </p>
-                <div className="mt-4 grid gap-3">
+                <div className="mt-3 grid max-h-72 gap-2 overflow-auto pr-1 md:grid-cols-2 xl:grid-cols-3">
                   {qaChecklistPreviewList.map((qaItem) => (
-                    <div key={qaItem.id} className="border border-white/10 bg-white/[0.035] p-4">
+                    <div key={qaItem.id} className="border border-white/10 bg-white/[0.035] p-3">
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <p className="text-sm font-semibold text-white">{qaItem.label}</p>
                         <span className="text-[0.65rem] uppercase tracking-[0.16em] text-[#c8a24a]">
@@ -931,7 +931,7 @@ export default function AppFactoryPage() {
             ) : null}
 
             {outputTab === "JSON" ? (
-              <pre className="mt-6 max-h-[640px] min-h-72 max-w-full overflow-auto border border-white/10 bg-[#050505] p-4 text-xs leading-6 text-white/60">
+              <pre className="mt-4 max-h-[520px] min-h-64 max-w-full overflow-auto border border-white/10 bg-[#050505] p-4 text-xs leading-6 text-white/60">
               {apiResponse
                 ? JSON.stringify(apiResponse, null, 2)
                 : "{\n  \"status\": \"Waiting for generation\"\n}"}
