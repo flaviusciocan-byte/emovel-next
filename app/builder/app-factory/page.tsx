@@ -370,6 +370,7 @@ export default function AppFactoryPage() {
         },
         body: JSON.stringify({
           prompt: normalizedPrompt,
+          themePackId: selectedThemePackId,
         }),
       });
       const payload = (await response.json()) as GenerateSchemaResponse;
