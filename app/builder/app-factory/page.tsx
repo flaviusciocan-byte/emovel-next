@@ -328,6 +328,7 @@ export default function AppFactoryPage() {
   const [status, setStatus] = useState("Enter a product prompt and generate the internal schema.");
   const [copyStatus, setCopyStatus] = useState("");
   const [outputTab, setOutputTab] = useState<"Preview" | "JSON">("Preview");
+  const [voiceStatus, setVoiceStatus] = useState("");
   const [previewCheckoutMessage, setPreviewCheckoutMessage] = useState("");
   const [selectedThemePackId, setSelectedThemePackId] = useState(
     EMOVEL_THEME_PACKS_V0[0]?.packId ?? "emovel-black-gold",
@@ -416,6 +417,7 @@ export default function AppFactoryPage() {
     setPrompt("");
     setApiResponse(null);
     setCopyStatus("");
+    setVoiceStatus("");
     setPreviewCheckoutMessage("");
     setStatus("Enter a product prompt and generate the internal schema.");
   }
@@ -434,6 +436,10 @@ export default function AppFactoryPage() {
     );
   }
 
+  function onVoicePlaceholder() {
+    setVoiceStatus("Voice input placeholder");
+  }
+
   return (
     <main className="min-h-screen bg-[#030405] px-6 py-24 text-white sm:px-8 lg:px-10">
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-10">
@@ -449,61 +455,28 @@ export default function AppFactoryPage() {
           </p>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[0.85fr_1.15fr]">
-          <section className="border border-white/10 bg-white/[0.035] p-5 sm:p-6">
-            <label className="block">
-              <span className="text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-white/45">
-                Product Prompt
-              </span>
-              <div className="mt-4 flex flex-wrap gap-2">
+        <div className="grid gap-6 lg:grid-cols-[18rem_minmax(0,1fr)]">
+          <aside className="h-fit border border-white/10 bg-white/[0.035] p-4 sm:p-5 lg:sticky lg:top-6">
+            <div>
+              <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-white/35">
+                Preset Prompt Selector
+              </p>
+              <div className="mt-4 grid gap-2">
                 {promptPresets.map((preset) => (
                   <button
                     key={preset.label}
                     type="button"
                     onClick={() => setPrompt(preset.prompt)}
-                    className="border border-white/10 bg-black/25 px-3 py-2 text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-white/50 transition hover:border-[#c8a24a]/60 hover:text-[#c8a24a]"
+                    className="border border-white/10 bg-black/25 px-3 py-3 text-left text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-white/50 transition hover:border-[#c8a24a]/60 hover:text-[#c8a24a]"
                   >
                     {preset.label}
                   </button>
                 ))}
               </div>
-              <textarea
-                value={prompt}
-                onChange={(event) => setPrompt(event.target.value)}
-                className="mt-4 min-h-72 w-full resize-none border border-white/10 bg-black/35 px-4 py-4 text-sm leading-7 text-white outline-none transition placeholder:text-white/25 focus:border-[#c8a24a]/70"
-                placeholder="Describe the app, audience, offer, screens, and commercial intent."
-              />
-            </label>
-
-            <div className="mt-4 border border-white/10 bg-black/25 p-4">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-white/35">
-                  Prompt Quality Notes
-                </p>
-                <div className="flex flex-wrap items-center gap-3">
-                  <span className="text-xs font-semibold uppercase tracking-[0.16em] text-[#c8a24a]">
-                    {promptQuality.status}
-                  </span>
-                  {prompt ? (
-                    <button
-                      type="button"
-                      onClick={onImprovePrompt}
-                      className="border border-white/15 px-3 py-1.5 text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-white transition hover:border-[#c8a24a]/70 hover:text-[#c8a24a]"
-                    >
-                      Improve Prompt
-                    </button>
-                  ) : null}
-                </div>
-              </div>
-              <div className="mt-3 grid gap-2 text-xs leading-6 text-white/55">
-                {promptQuality.notes.map((note) => (
-                  <p key={note}>{note}</p>
-                ))}
-              </div>
             </div>
 
-            <div className="mt-4 border border-white/10 bg-black/25 p-4">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="mt-5 border-t border-white/10 pt-5">
+              <div className="flex flex-col gap-2">
                 <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-white/35">
                   Theme Selector
                 </p>
@@ -511,7 +484,7 @@ export default function AppFactoryPage() {
                   {selectedThemePack?.label ?? "EMOVEL Theme"}
                 </span>
               </div>
-              <div className="mt-4 flex flex-wrap gap-2">
+              <div className="mt-4 grid gap-2">
                 {EMOVEL_THEME_PACKS_V0.map((themePack) => {
                   const selected = themePack.packId === selectedThemePackId;
 
@@ -520,7 +493,7 @@ export default function AppFactoryPage() {
                       key={themePack.packId}
                       type="button"
                       onClick={() => setSelectedThemePackId(themePack.packId)}
-                      className={`border px-3 py-2 text-left text-[0.65rem] font-semibold uppercase tracking-[0.14em] transition ${
+                      className={`border px-3 py-2 text-left text-[0.65rem] font-semibold uppercase tracking-[0.12em] transition ${
                         selected
                           ? "border-[#c8a24a]/70 bg-white/[0.08] text-[#c8a24a]"
                           : "border-white/10 bg-black/25 text-white/50 hover:border-[#c8a24a]/60 hover:text-[#c8a24a]"
@@ -539,31 +512,108 @@ export default function AppFactoryPage() {
               </div>
             </div>
 
-            <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex flex-wrap gap-3">
+            <div className="mt-5 border-t border-white/10 pt-5">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-white/35">
+                  Prompt Quality Notes
+                </p>
+                <span className="text-xs font-semibold uppercase tracking-[0.16em] text-[#c8a24a]">
+                  {promptQuality.status}
+                </span>
+              </div>
+              <div className="mt-3 grid gap-2 text-xs leading-6 text-white/55">
+                {promptQuality.notes.map((note) => (
+                  <p key={note}>{note}</p>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-5 grid gap-2 border-t border-white/10 pt-5">
+              {(prompt || apiResponse) ? (
                 <button
                   type="button"
-                  onClick={onGenerate}
-                  disabled={isGenerating}
-                  className="inline-flex h-12 items-center justify-center bg-white px-6 text-xs font-semibold uppercase tracking-[0.18em] text-black transition hover:bg-white/85 disabled:cursor-not-allowed disabled:bg-white/25 disabled:text-white/45"
+                  onClick={onClear}
+                  className="inline-flex h-11 items-center justify-center border border-white/15 px-4 text-xs font-semibold uppercase tracking-[0.16em] text-white transition hover:border-[#c8a24a]/70 hover:text-[#c8a24a]"
                 >
-                  {isGenerating ? "Generating" : "Generate"}
+                  Clear
                 </button>
-                {prompt || apiResponse ? (
+              ) : null}
+              {apiResponse ? (
+                <>
                   <button
                     type="button"
-                    onClick={onClear}
-                    className="inline-flex h-12 items-center justify-center border border-white/15 px-6 text-xs font-semibold uppercase tracking-[0.18em] text-white transition hover:border-[#c8a24a]/70 hover:text-[#c8a24a]"
+                    onClick={onCopyJson}
+                    className="inline-flex h-11 items-center justify-center border border-white/15 px-4 text-xs font-semibold uppercase tracking-[0.16em] text-white transition hover:border-[#c8a24a]/70 hover:text-[#c8a24a]"
                   >
-                    Clear
+                    Copy JSON
                   </button>
-                ) : null}
-              </div>
-              <p className="text-xs leading-6 text-white/45">{status}</p>
+                  <button
+                    type="button"
+                    onClick={onDownloadJson}
+                    className="inline-flex h-11 items-center justify-center border border-white/15 px-4 text-xs font-semibold uppercase tracking-[0.16em] text-white transition hover:border-[#c8a24a]/70 hover:text-[#c8a24a]"
+                  >
+                    Download JSON
+                  </button>
+                  {copyStatus ? (
+                    <span className="text-center text-xs uppercase tracking-[0.16em] text-[#c8a24a]">
+                      {copyStatus}
+                    </span>
+                  ) : null}
+                </>
+              ) : null}
             </div>
-          </section>
+          </aside>
 
-          <section className="min-w-0 border border-white/10 bg-black/35 p-5 sm:p-6">
+          <section className="min-w-0">
+            <div className="border border-white/10 bg-black/35 p-5 sm:p-7">
+              <label className="block">
+                <span className="text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-white/45">
+                  Product Prompt
+                </span>
+                <textarea
+                  value={prompt}
+                  onChange={(event) => setPrompt(event.target.value)}
+                  className="mt-4 min-h-[360px] w-full resize-none border border-white/10 bg-[#050505] px-5 py-5 text-base leading-8 text-white outline-none transition placeholder:text-white/25 focus:border-[#c8a24a]/70"
+                  placeholder="Describe the app, audience, offer, screens, and commercial intent."
+                />
+              </label>
+
+              <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={onGenerate}
+                    disabled={isGenerating}
+                    className="inline-flex h-12 items-center justify-center bg-white px-7 text-xs font-semibold uppercase tracking-[0.18em] text-black transition hover:bg-white/85 disabled:cursor-not-allowed disabled:bg-white/25 disabled:text-white/45"
+                  >
+                    {isGenerating ? "Generating" : "Generate"}
+                  </button>
+                  {prompt ? (
+                    <button
+                      type="button"
+                      onClick={onImprovePrompt}
+                      className="inline-flex h-12 items-center justify-center border border-white/15 px-5 text-xs font-semibold uppercase tracking-[0.16em] text-white transition hover:border-[#c8a24a]/70 hover:text-[#c8a24a]"
+                    >
+                      Improve Prompt
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={onVoicePlaceholder}
+                    className="inline-flex h-12 items-center justify-center border border-white/15 px-4 text-xs font-semibold uppercase tracking-[0.16em] text-white transition hover:border-[#c8a24a]/70 hover:text-[#c8a24a]"
+                    aria-label="Voice input placeholder"
+                  >
+                    Mic
+                  </button>
+                </div>
+                <div className="grid gap-1 text-xs leading-6 text-white/45 sm:text-right">
+                  <p>{status}</p>
+                  {voiceStatus ? <p className="text-[#c8a24a]">{voiceStatus}</p> : null}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 border border-white/10 bg-black/35 p-5 sm:p-6">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-white/45">
@@ -887,6 +937,7 @@ export default function AppFactoryPage() {
                 : "{\n  \"status\": \"Waiting for generation\"\n}"}
               </pre>
             ) : null}
+            </div>
           </section>
         </div>
       </section>
