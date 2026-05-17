@@ -328,6 +328,7 @@ export default function AppFactoryPage() {
   const [status, setStatus] = useState("Enter a product prompt and generate the internal schema.");
   const [copyStatus, setCopyStatus] = useState("");
   const [outputTab, setOutputTab] = useState<"Preview" | "JSON">("Preview");
+  const [advancedControlsOpen, setAdvancedControlsOpen] = useState(false);
   const [voiceStatus, setVoiceStatus] = useState("");
   const [previewCheckoutMessage, setPreviewCheckoutMessage] = useState("");
   const [selectedThemePackId, setSelectedThemePackId] = useState(
@@ -441,134 +442,155 @@ export default function AppFactoryPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#030405] px-5 py-16 text-white sm:px-8 lg:px-10">
-      <section className="mx-auto flex w-full max-w-7xl flex-col gap-8">
+    <main className="min-h-screen bg-[#030405] px-5 py-8 text-white sm:px-8 lg:px-10">
+      <section className="mx-auto flex w-full max-w-7xl flex-col gap-6">
         <div className="max-w-3xl">
-          <p className="text-sm font-medium uppercase tracking-[0.42em] text-[#c8a24a]">
-            EMOVEL APP FACTORY
+          <p className="text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-[#c8a24a]">
+            Builder Module
           </p>
-          <h1 className="mt-5 text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-            Generate an internal app schema.
+          <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+            App Factory
           </h1>
-          <p className="mt-5 max-w-2xl text-sm leading-7 text-white/55 sm:text-base">
-            Prompt to product brief, screen map, component map, theme pack, export targets, and QA.
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-white/55">
+            Generate structured app schemas from prompts.
           </p>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[17.5rem_minmax(0,1fr)]">
-          <aside className="h-fit border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/30 sm:p-5 lg:sticky lg:top-6">
-            <div>
-              <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-white/35">
-                Prompt Blocks
-              </p>
-              <p className="mt-2 text-xs leading-5 text-white/45">
-                Choose a starting block for the prompt canvas.
-              </p>
-              <div className="mt-3 grid gap-1.5">
-                {promptPresets.map((preset) => (
-                  <button
-                    key={preset.label}
-                    type="button"
-                    onClick={() => setPrompt(preset.prompt)}
-                    className="border border-white/10 bg-black/25 px-3 py-2 text-left text-[0.62rem] font-semibold uppercase tracking-[0.1em] text-white/55 transition hover:border-[#c8a24a]/60 hover:bg-white/[0.035] hover:text-[#c8a24a]"
-                  >
-                    {preset.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="mt-4 border-t border-white/10 pt-4">
-              <div className="flex flex-col gap-2">
-                <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-white/35">
-                  Theme Selector
-                </p>
-                <span className="text-xs uppercase tracking-[0.16em] text-[#c8a24a]">
-                  {selectedThemePack?.label ?? "EMOVEL Theme"}
+        <section className="min-w-0">
+          <div className="border border-white/10 bg-white/[0.025]">
+            <button
+              type="button"
+              onClick={() => setAdvancedControlsOpen((current) => !current)}
+              className="flex w-full items-center justify-between gap-4 px-4 py-3 text-left transition hover:bg-white/[0.025] sm:px-5"
+            >
+              <span>
+                <span className="block text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-white/45">
+                  Advanced Controls
                 </span>
-              </div>
-              <div className="mt-3 grid gap-2">
-                {EMOVEL_THEME_PACKS_V0.map((themePack) => {
-                  const selected = themePack.packId === selectedThemePackId;
-
-                  return (
-                    <button
-                      key={themePack.packId}
-                      type="button"
-                      onClick={() => setSelectedThemePackId(themePack.packId)}
-                      className={`border px-3 py-2 text-left text-[0.62rem] font-semibold uppercase tracking-[0.1em] transition ${
-                        selected
-                          ? "border-[#c8a24a]/70 bg-white/[0.08] text-[#c8a24a]"
-                          : "border-white/10 bg-black/25 text-white/50 hover:border-[#c8a24a]/60 hover:text-[#c8a24a]"
-                      }`}
-                    >
-                      <span className="flex items-center gap-2">
-                        <span
-                          className="h-3 w-3 border border-white/20"
-                          style={{ backgroundColor: themePack.tokens.accent }}
-                        />
-                        {themePack.label}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="mt-4 border-t border-white/10 pt-4">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-white/35">
-                  Prompt Quality Notes
-                </p>
-                <span className="text-xs font-semibold uppercase tracking-[0.16em] text-[#c8a24a]">
-                  {promptQuality.status}
+                <span className="mt-1 block text-xs text-white/45">
+                  Prompt blocks, theme settings, quality notes, and JSON actions.
                 </span>
-              </div>
-              <div className="mt-3 grid gap-2 text-xs leading-5 text-white/55">
-                {promptQuality.notes.map((note) => (
-                  <p key={note}>{note}</p>
-                ))}
-              </div>
-            </div>
+              </span>
+              <span className="text-xs font-semibold uppercase tracking-[0.16em] text-[#c8a24a]">
+                {advancedControlsOpen ? "Hide" : "Show"}
+              </span>
+            </button>
 
-            <div className="mt-4 grid gap-2 border-t border-white/10 pt-4">
-              {(prompt || apiResponse) ? (
-                <button
-                  type="button"
-                  onClick={onClear}
-                  className="inline-flex h-11 items-center justify-center border border-white/15 px-4 text-xs font-semibold uppercase tracking-[0.16em] text-white transition hover:border-[#c8a24a]/70 hover:text-[#c8a24a]"
-                >
-                  Clear
-                </button>
-              ) : null}
-              {apiResponse ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={onCopyJson}
-                    className="inline-flex h-11 items-center justify-center border border-white/15 px-4 text-xs font-semibold uppercase tracking-[0.16em] text-white transition hover:border-[#c8a24a]/70 hover:text-[#c8a24a]"
-                  >
-                    Copy JSON
-                  </button>
-                  <button
-                    type="button"
-                    onClick={onDownloadJson}
-                    className="inline-flex h-11 items-center justify-center border border-white/15 px-4 text-xs font-semibold uppercase tracking-[0.16em] text-white transition hover:border-[#c8a24a]/70 hover:text-[#c8a24a]"
-                  >
-                    Download JSON
-                  </button>
-                  {copyStatus ? (
-                    <span className="text-center text-xs uppercase tracking-[0.16em] text-[#c8a24a]">
-                      {copyStatus}
+            {advancedControlsOpen ? (
+              <div className="grid gap-4 border-t border-white/10 p-4 sm:p-5 lg:grid-cols-3">
+                <div>
+                  <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-white/35">
+                    Prompt Blocks
+                  </p>
+                  <p className="mt-2 text-xs leading-5 text-white/45">
+                    Choose a starting block for the prompt canvas.
+                  </p>
+                  <div className="mt-3 grid gap-1.5">
+                    {promptPresets.map((preset) => (
+                      <button
+                        key={preset.label}
+                        type="button"
+                        onClick={() => setPrompt(preset.prompt)}
+                        className="border border-white/10 bg-black/25 px-3 py-2 text-left text-[0.62rem] font-semibold uppercase tracking-[0.1em] text-white/55 transition hover:border-[#c8a24a]/60 hover:bg-white/[0.035] hover:text-[#c8a24a]"
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex flex-col gap-2">
+                    <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-white/35">
+                      Theme Selector
+                    </p>
+                    <span className="text-xs uppercase tracking-[0.16em] text-[#c8a24a]">
+                      {selectedThemePack?.label ?? "EMOVEL Theme"}
                     </span>
-                  ) : null}
-                </>
-              ) : null}
-            </div>
-          </aside>
+                  </div>
+                  <div className="mt-3 grid gap-2">
+                    {EMOVEL_THEME_PACKS_V0.map((themePack) => {
+                      const selected = themePack.packId === selectedThemePackId;
 
-          <section className="min-w-0">
-            <div className="border border-white/10 bg-black/40 p-5 shadow-2xl shadow-black/35 sm:p-8">
+                      return (
+                        <button
+                          key={themePack.packId}
+                          type="button"
+                          onClick={() => setSelectedThemePackId(themePack.packId)}
+                          className={`border px-3 py-2 text-left text-[0.62rem] font-semibold uppercase tracking-[0.1em] transition ${
+                            selected
+                              ? "border-[#c8a24a]/70 bg-white/[0.08] text-[#c8a24a]"
+                              : "border-white/10 bg-black/25 text-white/50 hover:border-[#c8a24a]/60 hover:text-[#c8a24a]"
+                          }`}
+                        >
+                          <span className="flex items-center gap-2">
+                            <span
+                              className="h-3 w-3 border border-white/20"
+                              style={{ backgroundColor: themePack.tokens.accent }}
+                            />
+                            {themePack.label}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-white/35">
+                      Prompt Quality Notes
+                    </p>
+                    <span className="text-xs font-semibold uppercase tracking-[0.16em] text-[#c8a24a]">
+                      {promptQuality.status}
+                    </span>
+                  </div>
+                  <div className="mt-3 grid gap-2 text-xs leading-5 text-white/55">
+                    {promptQuality.notes.map((note) => (
+                      <p key={note}>{note}</p>
+                    ))}
+                  </div>
+
+                  <div className="mt-4 grid gap-2 border-t border-white/10 pt-4">
+                    {(prompt || apiResponse) ? (
+                      <button
+                        type="button"
+                        onClick={onClear}
+                        className="inline-flex h-11 items-center justify-center border border-white/15 px-4 text-xs font-semibold uppercase tracking-[0.16em] text-white transition hover:border-[#c8a24a]/70 hover:text-[#c8a24a]"
+                      >
+                        Clear
+                      </button>
+                    ) : null}
+                    {apiResponse ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={onCopyJson}
+                          className="inline-flex h-11 items-center justify-center border border-white/15 px-4 text-xs font-semibold uppercase tracking-[0.16em] text-white transition hover:border-[#c8a24a]/70 hover:text-[#c8a24a]"
+                        >
+                          Copy JSON
+                        </button>
+                        <button
+                          type="button"
+                          onClick={onDownloadJson}
+                          className="inline-flex h-11 items-center justify-center border border-white/15 px-4 text-xs font-semibold uppercase tracking-[0.16em] text-white transition hover:border-[#c8a24a]/70 hover:text-[#c8a24a]"
+                        >
+                          Download JSON
+                        </button>
+                        {copyStatus ? (
+                          <span className="text-center text-xs uppercase tracking-[0.16em] text-[#c8a24a]">
+                            {copyStatus}
+                          </span>
+                        ) : null}
+                      </>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="mt-4 border border-white/10 bg-black/40 p-5 shadow-2xl shadow-black/35 sm:p-8">
               <label className="block">
                 <span className="text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-white/45">
                   Product Prompt
@@ -942,7 +964,6 @@ export default function AppFactoryPage() {
             ) : null}
             </div>
           </section>
-        </div>
       </section>
     </main>
   );
